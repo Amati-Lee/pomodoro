@@ -11,6 +11,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
+html,body{overscroll-behavior:none;touch-action:pan-x pan-y}
 body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
 
 .header{background:linear-gradient(135deg,#e74c3c,#c0392b);padding:14px 20px;text-align:center;position:relative}
@@ -742,6 +743,28 @@ updateLockUI();
 buildSchedule();
 if(schedule.length > 0) loadCurrentPhase();
 updateDisplay();
+
+// ===== 背景恢復：切回來時補上離開的時間 =====
+let timerStartedAt = 0; // 當前階段開始的 timestamp
+let timerStartRemain = 0; // 開始時剩餘秒數
+
+const _origToggle = toggleTimer;
+toggleTimer = function(){
+  _origToggle();
+  if(running){
+    timerStartedAt = Date.now();
+    timerStartRemain = remainSec;
+  }
+};
+
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.hidden && running && timerStartedAt > 0){
+    const elapsed = Math.floor((Date.now() - timerStartedAt) / 1000);
+    remainSec = Math.max(0, timerStartRemain - elapsed);
+    updateDisplay();
+    if(remainSec <= 0) tick(); // 觸發完成
+  }
+});
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js');
