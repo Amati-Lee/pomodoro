@@ -17,76 +17,110 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
 .header h1{font-size:20px;font-weight:600;color:#fff}
 .header .ver{font-size:11px;opacity:.6;color:#fff}
 .lock-btn{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:22px;cursor:pointer;padding:4px}
+.gear-btn{position:absolute;left:14px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:20px;cursor:pointer;padding:4px}
 
-.phase-bar{display:flex;background:#16213e}
-.phase-tab{flex:1;padding:10px 0;text-align:center;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;border-bottom:3px solid transparent}
-.phase-tab.active-work{color:#e74c3c;border-bottom-color:#e74c3c;background:#1a1a2e}
-.phase-tab.active-break{color:#27ae60;border-bottom-color:#27ae60;background:#1a1a2e}
-.phase-tab.inactive{color:#555}
+/* 活動列表 */
+.activity-bar{background:#16213e;padding:8px 12px;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
+.activity-bar::-webkit-scrollbar{display:none}
+.act-chip{display:inline-block;padding:6px 14px;border-radius:20px;font-size:13px;margin-right:6px;background:#2d2d4e;color:#888;border:2px solid transparent;cursor:pointer;transition:.2s}
+.act-chip.current{background:#e74c3c22;color:#e74c3c;border-color:#e74c3c;font-weight:600}
+.act-chip.done{background:#27ae6033;color:#27ae60;border-color:#27ae60;text-decoration:line-through}
+.act-chip.break-chip{background:#27ae6022;color:#666;font-size:11px;padding:4px 8px}
+.act-chip.break-chip.current{color:#27ae60;border-color:#27ae60}
 
 .main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
 
-.timer-ring{position:relative;width:260px;height:260px;margin-bottom:24px}
+.timer-ring{position:relative;width:240px;height:240px;margin-bottom:16px}
 .timer-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
 .timer-ring .bg{fill:none;stroke:#2d2d4e;stroke-width:8}
 .timer-ring .progress{fill:none;stroke:#e74c3c;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .5s linear}
 .timer-ring.break .progress{stroke:#27ae60}
 .timer-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
-.timer-text .time{font-size:56px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:2px}
-.timer-text .label{font-size:14px;color:#888;margin-top:4px}
+.timer-text .activity-name{font-size:15px;color:#ccc;margin-bottom:4px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.timer-text .time{font-size:52px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:2px}
+.timer-text .label{font-size:13px;color:#888;margin-top:2px}
 
-.controls{display:flex;gap:16px;margin-bottom:20px}
-.ctrl-btn{width:64px;height:64px;border-radius:50%;border:none;font-size:26px;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center}
+.controls{display:flex;gap:16px;margin-bottom:16px}
+.ctrl-btn{width:60px;height:60px;border-radius:50%;border:none;font-size:24px;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center}
 .ctrl-btn:active{transform:scale(.9)}
 .btn-start{background:#e74c3c;color:#fff}
 .btn-start.running{background:#f39c12}
 .btn-reset{background:#333;color:#aaa}
+.btn-skip{background:#333;color:#aaa}
 
-.stats{background:#16213e;border-radius:12px;padding:14px 20px;text-align:center;width:100%;max-width:300px}
-.stats .today{font-size:14px;color:#888}
-.stats .count{font-size:36px;font-weight:700;color:#e74c3c;margin:4px 0}
-.stats .count span{font-size:14px;font-weight:400;color:#888}
+/* 進度與統計 */
+.progress-section{width:100%;max-width:340px;margin-bottom:12px}
+.progress-bar-bg{background:#2d2d4e;border-radius:8px;height:8px;overflow:hidden}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,#e74c3c,#f39c12);border-radius:8px;transition:width .3s}
+.progress-label{display:flex;justify-content:space-between;font-size:12px;color:#888;margin-top:4px}
+
+.stats{background:#16213e;border-radius:12px;padding:12px 20px;text-align:center;width:100%;max-width:340px}
+.stats .today{font-size:13px;color:#888}
+.stats .count{font-size:28px;font-weight:700;color:#e74c3c;margin:2px 0}
+.stats .count span{font-size:13px;font-weight:400;color:#888}
 .stats .total-time{font-size:12px;color:#666}
 
+/* 完成列表 */
+.done-list{width:100%;max-width:340px;margin-top:12px}
+.done-list h3{font-size:12px;color:#666;margin-bottom:6px}
+.done-item{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;color:#888}
+.done-item .check{color:#27ae60}
+
 /* 設定面板 */
-.settings-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center}
+.settings-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 0}
 .settings-overlay.show{display:flex}
-.settings-panel{background:#1a1a2e;border-radius:16px;padding:24px;width:90%;max-width:360px;border:1px solid #333}
-.settings-panel h2{font-size:18px;margin-bottom:16px;text-align:center}
-.setting-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:8px 0}
+.settings-panel{background:#1a1a2e;border-radius:16px;padding:20px;width:92%;max-width:380px;border:1px solid #333}
+.settings-panel h2{font-size:18px;margin-bottom:12px;text-align:center}
+
+.act-list{margin-bottom:12px}
+.act-row{display:flex;align-items:center;gap:8px;padding:8px;margin-bottom:6px;background:#16213e;border-radius:10px}
+.act-row input[type=text]{flex:1;min-width:0;background:#0f0f23;border:1px solid #333;border-radius:6px;padding:8px;font-size:14px;color:#fff;outline:none}
+.act-row input[type=text]:focus{border-color:#e74c3c}
+.act-row .min-adj{display:flex;align-items:center;gap:4px}
+.act-row .min-btn{width:28px;height:28px;border-radius:50%;border:1px solid #555;background:#2d2d4e;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.act-row .min-btn:active{background:#e74c3c}
+.act-row .min-val{font-size:15px;font-weight:600;min-width:28px;text-align:center}
+.act-row .del-btn{background:none;border:none;color:#e74c3c;font-size:18px;cursor:pointer;padding:4px}
+
+.add-act-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px;background:#2d2d4e;border:1px dashed #555;border-radius:10px;color:#aaa;font-size:14px;cursor:pointer;margin-bottom:12px}
+.add-act-btn:active{background:#333}
+
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0}
 .setting-row label{font-size:14px;color:#ccc}
-.setting-row .adjuster{display:flex;align-items:center;gap:10px}
-.adj-btn{width:36px;height:36px;border-radius:50%;border:1px solid #555;background:#2d2d4e;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.setting-row .adjuster{display:flex;align-items:center;gap:8px}
+.adj-btn{width:32px;height:32px;border-radius:50%;border:1px solid #555;background:#2d2d4e;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .adj-btn:active{background:#e74c3c}
-.adj-val{font-size:20px;font-weight:600;min-width:40px;text-align:center}
-.settings-panel .close-btn{display:block;margin:8px auto 0;background:linear-gradient(135deg,#e74c3c,#c0392b);border:none;border-radius:8px;padding:10px 32px;color:#fff;font-size:15px;cursor:pointer}
-.gear-btn{position:absolute;left:14px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:20px;cursor:pointer;padding:4px}
+.adj-val{font-size:18px;font-weight:600;min-width:32px;text-align:center}
+
+.settings-panel .close-btn{display:block;margin:12px auto 0;background:linear-gradient(135deg,#e74c3c,#c0392b);border:none;border-radius:8px;padding:10px 32px;color:#fff;font-size:15px;cursor:pointer}
+
+/* 預設活動按鈕 */
+.preset-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.preset-btn{padding:5px 10px;border-radius:14px;border:1px solid #555;background:#2d2d4e;color:#ccc;font-size:12px;cursor:pointer}
+.preset-btn:active{background:#e74c3c;color:#fff}
 
 /* 鎖定提示 */
 .locked-toast{display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#e74c3c;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:200;white-space:nowrap}
 .locked-toast.show{display:block;animation:fadeout 2s forwards}
 @keyframes fadeout{0%,70%{opacity:1}100%{opacity:0;display:none}}
 
-/* 歷史 */
-.history{width:100%;max-width:360px;margin-top:16px}
-.history h3{font-size:13px;color:#666;margin-bottom:8px;padding-left:4px}
-.history-list{display:flex;flex-wrap:wrap;gap:6px}
-.dot{width:28px;height:28px;border-radius:50%;background:#2d2d4e;display:flex;align-items:center;justify-content:center;font-size:11px;color:#888}
-.dot.done{background:#e74c3c;color:#fff}
+/* 全部完成 */
+.all-done{display:none;text-align:center;padding:40px 20px}
+.all-done.show{display:block}
+.all-done .big{font-size:60px;margin-bottom:12px}
+.all-done .msg{font-size:18px;color:#27ae60;font-weight:600}
+.all-done .sub{font-size:14px;color:#888;margin-top:8px}
 </style>
 </head>
 <body>
 
 <div class="header">
   <button class="gear-btn" onclick="openSettings()">⚙️</button>
-  <h1>🍅 番茄鐘 <span class="ver">v1.0</span></h1>
+  <h1>🍅 番茄鐘 <span class="ver">v1.1</span></h1>
   <button class="lock-btn" id="lockBtn" onclick="toggleLock()">🔓</button>
 </div>
 
-<div class="phase-bar">
-  <div class="phase-tab active-work" id="tabWork">🎯 專注</div>
-  <div class="phase-tab inactive" id="tabBreak">☕ 休息</div>
-</div>
+<div class="activity-bar" id="activityBar"></div>
 
 <div class="main">
   <div class="timer-ring" id="timerRing">
@@ -96,83 +130,105 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
         stroke-dasharray="565.49" stroke-dashoffset="0"/>
     </svg>
     <div class="timer-text">
+      <div class="activity-name" id="activityName"></div>
       <div class="time" id="timeDisplay">25:00</div>
       <div class="label" id="phaseLabel">準備開始</div>
     </div>
   </div>
 
   <div class="controls">
-    <button class="ctrl-btn btn-reset" onclick="resetTimer()">↺</button>
+    <button class="ctrl-btn btn-reset" onclick="resetAll()" title="重頭開始">↺</button>
     <button class="ctrl-btn btn-start" id="startBtn" onclick="toggleTimer()">▶</button>
+    <button class="ctrl-btn btn-skip" onclick="skipCurrent()" title="跳過">⏭</button>
+  </div>
+
+  <div class="progress-section">
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="totalProgress"></div></div>
+    <div class="progress-label">
+      <span id="progressText">0 / 0 完成</span>
+      <span id="progressPct">0%</span>
+    </div>
   </div>
 
   <div class="stats">
-    <div class="today">今日完成</div>
-    <div class="count" id="todayCount">0 <span>輪</span></div>
-    <div class="total-time" id="todayTime">累計 0 分鐘專注</div>
+    <div class="today">今日累計</div>
+    <div class="count" id="todayCount">0 <span>分鐘專注</span></div>
   </div>
 
-  <div class="history" id="historySection">
-    <h3>今日紀錄</h3>
-    <div class="history-list" id="historyList"></div>
+  <div class="done-list" id="doneList">
+    <h3>已完成</h3>
+  </div>
+
+  <div class="all-done" id="allDone">
+    <div class="big">🎉</div>
+    <div class="msg">全部完成！</div>
+    <div class="sub" id="allDoneSub"></div>
   </div>
 </div>
 
 <!-- 設定面板 -->
 <div class="settings-overlay" id="settingsOverlay" onclick="closeSettingsOutside(event)">
-  <div class="settings-panel">
-    <h2>⚙️ 設定</h2>
-    <div class="setting-row">
-      <label>🎯 專注時間</label>
-      <div class="adjuster">
-        <button class="adj-btn" onclick="adjust('work',-5)">−</button>
-        <span class="adj-val" id="workVal">25</span><span style="color:#888">分</span>
-        <button class="adj-btn" onclick="adjust('work',5)">+</button>
-      </div>
+  <div class="settings-panel" onclick="event.stopPropagation()">
+    <h2>⚙️ 活動排程</h2>
+    <div class="preset-row">
+      <button class="preset-btn" onclick="addPreset('🎻 練琴',25)">🎻 練琴</button>
+      <button class="preset-btn" onclick="addPreset('📖 寫功課',25)">📖 寫功課</button>
+      <button class="preset-btn" onclick="addPreset('📚 閱讀',20)">📚 閱讀</button>
+      <button class="preset-btn" onclick="addPreset('🧮 數學',25)">🧮 數學</button>
+      <button class="preset-btn" onclick="addPreset('🎨 畫畫',20)">🎨 畫畫</button>
+      <button class="preset-btn" onclick="addPreset('🏃 運動',15)">🏃 運動</button>
     </div>
+    <div class="act-list" id="actList"></div>
+    <button class="add-act-btn" onclick="addActivity()">＋ 新增活動</button>
     <div class="setting-row">
-      <label>☕ 休息時間</label>
+      <label>☕ 休息時間（每項之間）</label>
       <div class="adjuster">
-        <button class="adj-btn" onclick="adjust('break',-1)">−</button>
+        <button class="adj-btn" onclick="adjustBreak(-1)">−</button>
         <span class="adj-val" id="breakVal">5</span><span style="color:#888">分</span>
-        <button class="adj-btn" onclick="adjust('break',1)">+</button>
+        <button class="adj-btn" onclick="adjustBreak(1)">+</button>
       </div>
     </div>
-    <div class="setting-row">
-      <label>🎯 今日目標</label>
-      <div class="adjuster">
-        <button class="adj-btn" onclick="adjust('goal',-1)">−</button>
-        <span class="adj-val" id="goalVal">8</span><span style="color:#888">輪</span>
-        <button class="adj-btn" onclick="adjust('goal',1)">+</button>
-      </div>
-    </div>
-    <button class="close-btn" onclick="closeSettings()">確定</button>
+    <button class="close-btn" onclick="closeSettings()">確定開始</button>
   </div>
 </div>
 
 <div class="locked-toast" id="lockedToast">🔒 已鎖定，長按鎖頭解鎖</div>
 
 <script>
-// ===== 設定 =====
-let workMin = parseInt(localStorage.getItem('pm_work')) || 25;
+// ===== 活動資料 =====
+const DEFAULT_ACTIVITIES = [
+  {name:'🎻 練琴', minutes:25},
+  {name:'📖 寫功課', minutes:25},
+  {name:'📚 閱讀', minutes:20},
+];
+let activities = JSON.parse(localStorage.getItem('pm_activities') || 'null') || DEFAULT_ACTIVITIES.map(a=>({...a}));
 let breakMin = parseInt(localStorage.getItem('pm_break')) || 5;
-let goalCount = parseInt(localStorage.getItem('pm_goal')) || 8;
 let locked = localStorage.getItem('pm_locked') === 'true';
 
-// ===== 狀態 =====
-let phase = 'work'; // 'work' | 'break'
-let totalSec = workMin * 60;
-let remainSec = totalSec;
+// ===== 執行狀態 =====
+// schedule: [{type:'work',name,minutes,index}, {type:'break',minutes}, ...]
+let schedule = [];
+let scheduleIdx = 0;
+let totalSec = 0;
+let remainSec = 0;
 let running = false;
 let intervalId = null;
+let completedActivities = [];
 
-// ===== 今日紀錄 =====
-function todayKey(){ return 'pm_' + new Date().toISOString().slice(0,10); }
-function loadToday(){
-  const d = JSON.parse(localStorage.getItem(todayKey()) || '{"count":0,"minutes":0,"times":[]}');
-  return d;
+function buildSchedule(){
+  schedule = [];
+  activities.forEach((a, i) => {
+    schedule.push({type:'work', name:a.name, minutes:a.minutes, actIndex:i});
+    if(i < activities.length - 1){
+      schedule.push({type:'break', name:'☕ 休息', minutes:breakMin});
+    }
+  });
 }
-function saveToday(d){ localStorage.setItem(todayKey(), JSON.stringify(d)); }
+
+function saveActivities(){
+  localStorage.setItem('pm_activities', JSON.stringify(activities));
+  localStorage.setItem('pm_break', breakMin);
+}
 
 // ===== 音效 =====
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -191,21 +247,45 @@ function playSound(freq, duration){
   osc.stop(audioCtx.currentTime + duration);
 }
 function playAlarm(){
-  // 三聲提示
   playSound(880, 0.3);
   setTimeout(()=>playSound(880, 0.3), 400);
   setTimeout(()=>playSound(1100, 0.5), 800);
 }
-
-// ===== 環形進度 =====
-const circumference = 2 * Math.PI * 90; // 565.49
-function updateRing(){
-  const pct = remainSec / totalSec;
-  const offset = circumference * pct;
-  document.getElementById('progressRing').style.strokeDashoffset = offset;
+function playComplete(){
+  playSound(523, 0.2);
+  setTimeout(()=>playSound(659, 0.2), 200);
+  setTimeout(()=>playSound(784, 0.2), 400);
+  setTimeout(()=>playSound(1047, 0.4), 600);
 }
 
-// ===== 顯示更新 =====
+// ===== 環形進度 =====
+const circumference = 2 * Math.PI * 90;
+function updateRing(){
+  const pct = totalSec > 0 ? remainSec / totalSec : 0;
+  document.getElementById('progressRing').style.strokeDashoffset = circumference * pct;
+}
+
+// ===== 活動橫條 =====
+function renderActivityBar(){
+  const bar = document.getElementById('activityBar');
+  bar.innerHTML = '';
+  schedule.forEach((s, i) => {
+    const chip = document.createElement('span');
+    if(s.type === 'break'){
+      chip.className = 'act-chip break-chip' + (i === scheduleIdx ? ' current' : '') + (i < scheduleIdx ? ' done' : '');
+      chip.textContent = `${s.minutes}m`;
+    } else {
+      chip.className = 'act-chip' + (i === scheduleIdx ? ' current' : '') + (i < scheduleIdx ? ' done' : '');
+      chip.textContent = `${s.name} ${s.minutes}m`;
+    }
+    bar.appendChild(chip);
+  });
+  // 自動捲到當前
+  const current = bar.querySelector('.current');
+  if(current) current.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+}
+
+// ===== 顯示 =====
 function updateDisplay(){
   const min = Math.floor(remainSec / 60);
   const sec = remainSec % 60;
@@ -213,23 +293,18 @@ function updateDisplay(){
     String(min).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
   updateRing();
 
-  // 相位標籤
+  const cur = schedule[scheduleIdx];
   const ring = document.getElementById('timerRing');
-  const tabW = document.getElementById('tabWork');
-  const tabB = document.getElementById('tabBreak');
-  if(phase === 'work'){
-    ring.classList.remove('break');
-    tabW.className = 'phase-tab active-work';
-    tabB.className = 'phase-tab inactive';
-    document.getElementById('phaseLabel').textContent = running ? '專注中...' : '準備開始';
-  } else {
+  if(cur && cur.type === 'break'){
     ring.classList.add('break');
-    tabW.className = 'phase-tab inactive';
-    tabB.className = 'phase-tab active-break';
+    document.getElementById('activityName').textContent = '☕ 休息一下';
     document.getElementById('phaseLabel').textContent = running ? '休息中...' : '休息時間';
+  } else if(cur){
+    ring.classList.remove('break');
+    document.getElementById('activityName').textContent = cur.name;
+    document.getElementById('phaseLabel').textContent = running ? '專注中...' : '準備開始';
   }
 
-  // 按鈕狀態
   const btn = document.getElementById('startBtn');
   if(running){
     btn.textContent = '⏸';
@@ -238,152 +313,235 @@ function updateDisplay(){
     btn.textContent = '▶';
     btn.classList.remove('running');
   }
+
+  renderActivityBar();
+  updateProgress();
 }
 
-function updateStats(){
-  const d = loadToday();
-  document.getElementById('todayCount').innerHTML = d.count + ' <span>/ ' + goalCount + ' 輪</span>';
-  document.getElementById('todayTime').textContent = '累計 ' + d.minutes + ' 分鐘專注';
+function updateProgress(){
+  const workItems = schedule.filter(s => s.type === 'work');
+  const doneCount = completedActivities.length;
+  const totalCount = workItems.length;
+  const pct = totalCount > 0 ? Math.round(doneCount / totalCount * 100) : 0;
+  document.getElementById('totalProgress').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${doneCount} / ${totalCount} 完成`;
+  document.getElementById('progressPct').textContent = pct + '%';
 
-  // 歷史圓點
-  const list = document.getElementById('historyList');
-  list.innerHTML = '';
-  for(let i = 0; i < Math.max(goalCount, d.count); i++){
-    const dot = document.createElement('div');
-    dot.className = 'dot' + (i < d.count ? ' done' : '');
-    dot.textContent = i + 1;
-    list.appendChild(dot);
+  // 今日累計
+  const totalMin = completedActivities.reduce((sum, a) => sum + a.minutes, 0);
+  document.getElementById('todayCount').innerHTML = totalMin + ' <span>分鐘專注</span>';
+
+  // 完成列表
+  const dl = document.getElementById('doneList');
+  if(doneCount === 0){
+    dl.style.display = 'none';
+  } else {
+    dl.style.display = 'block';
+    dl.innerHTML = '<h3>已完成</h3>' + completedActivities.map(a =>
+      `<div class="done-item"><span class="check">✓</span> ${a.name} — ${a.minutes}分鐘 <span style="color:#555;font-size:11px">${a.time}</span></div>`
+    ).join('');
+  }
+
+  // 全部完成
+  const allDone = document.getElementById('allDone');
+  if(doneCount >= totalCount && totalCount > 0 && scheduleIdx >= schedule.length){
+    allDone.classList.add('show');
+    document.getElementById('allDoneSub').textContent = `共完成 ${totalCount} 項活動，累計 ${totalMin} 分鐘`;
+  } else {
+    allDone.classList.remove('show');
   }
 }
 
 // ===== 計時器 =====
+function loadCurrentPhase(){
+  if(scheduleIdx >= schedule.length) return;
+  const cur = schedule[scheduleIdx];
+  totalSec = cur.minutes * 60;
+  remainSec = totalSec;
+}
+
 function tick(){
   if(remainSec <= 0){
     clearInterval(intervalId);
     running = false;
-    playAlarm();
 
-    if(phase === 'work'){
-      // 完成一輪
-      const d = loadToday();
-      d.count++;
-      d.minutes += workMin;
-      d.times.push(new Date().toTimeString().slice(0,5));
-      saveToday(d);
-      updateStats();
+    const cur = schedule[scheduleIdx];
+    if(cur.type === 'work'){
+      playAlarm();
+      completedActivities.push({
+        name: cur.name,
+        minutes: cur.minutes,
+        time: new Date().toTimeString().slice(0,5)
+      });
+      saveTodayRecord();
+    } else {
+      playSound(660, 0.3);
+    }
 
-      // 切到休息
-      phase = 'break';
-      totalSec = breakMin * 60;
-      remainSec = totalSec;
+    scheduleIdx++;
+    if(scheduleIdx < schedule.length){
+      loadCurrentPhase();
       updateDisplay();
-      // 自動開始休息
+      // 自動開始下一項（休息或活動）
       setTimeout(()=>{ if(!running) toggleTimer(); }, 1500);
     } else {
-      // 休息結束，切回專注
-      phase = 'work';
-      totalSec = workMin * 60;
-      remainSec = totalSec;
+      // 全部完成
+      playComplete();
       updateDisplay();
     }
     return;
   }
   remainSec--;
   updateDisplay();
-  // 更新頁面標題
   const min = Math.floor(remainSec / 60);
   const sec = remainSec % 60;
-  document.title = `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')} - 番茄鐘`;
+  const cur = schedule[scheduleIdx];
+  document.title = `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')} ${cur ? cur.name : ''} - 番茄鐘`;
 }
 
 function toggleTimer(){
+  if(scheduleIdx >= schedule.length) return;
   if(running){
     clearInterval(intervalId);
     running = false;
   } else {
-    // 初始化 AudioContext（需要使用者互動）
     if(!audioCtx) audioCtx = new AudioCtx();
+    keepAwake();
     running = true;
     intervalId = setInterval(tick, 1000);
   }
   updateDisplay();
 }
 
-function resetTimer(){
+function skipCurrent(){
+  if(scheduleIdx >= schedule.length) return;
   clearInterval(intervalId);
   running = false;
-  phase = 'work';
-  totalSec = workMin * 60;
-  remainSec = totalSec;
+  const cur = schedule[scheduleIdx];
+  if(cur.type === 'work'){
+    // 跳過不算完成
+  }
+  scheduleIdx++;
+  if(scheduleIdx < schedule.length){
+    loadCurrentPhase();
+  }
+  updateDisplay();
+}
+
+function resetAll(){
+  clearInterval(intervalId);
+  running = false;
+  scheduleIdx = 0;
+  completedActivities = [];
+  buildSchedule();
+  if(schedule.length > 0) loadCurrentPhase();
   updateDisplay();
   document.title = '番茄鐘';
 }
 
-// ===== 設定 =====
+// ===== 今日紀錄（跨 session 累計）=====
+function todayKey(){ return 'pm_' + new Date().toISOString().slice(0,10); }
+function saveTodayRecord(){
+  const existing = JSON.parse(localStorage.getItem(todayKey()) || '[]');
+  const last = completedActivities[completedActivities.length - 1];
+  existing.push(last);
+  localStorage.setItem(todayKey(), JSON.stringify(existing));
+}
+
+// ===== 設定面板 =====
+let editActivities = [];
+
 function openSettings(){
-  if(locked){
-    showLockedToast();
-    return;
-  }
-  if(running) return; // 計時中不開設定
-  document.getElementById('workVal').textContent = workMin;
+  if(locked){ showLockedToast(); return; }
+  if(running) return;
+  editActivities = activities.map(a=>({...a}));
+  renderEditList();
   document.getElementById('breakVal').textContent = breakMin;
-  document.getElementById('goalVal').textContent = goalCount;
   document.getElementById('settingsOverlay').classList.add('show');
 }
 
+function renderEditList(){
+  const list = document.getElementById('actList');
+  list.innerHTML = '';
+  editActivities.forEach((a, i) => {
+    const row = document.createElement('div');
+    row.className = 'act-row';
+    row.innerHTML = `
+      <input type="text" value="${a.name}" onchange="editActivities[${i}].name=this.value" placeholder="活動名稱">
+      <div class="min-adj">
+        <button class="min-btn" onclick="adjEditMin(${i},-5)">−</button>
+        <span class="min-val" id="editMin${i}">${a.minutes}</span><span style="color:#888;font-size:12px">分</span>
+        <button class="min-btn" onclick="adjEditMin(${i},5)">+</button>
+      </div>
+      <button class="del-btn" onclick="delEditAct(${i})">✕</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function adjEditMin(i, delta){
+  editActivities[i].minutes = Math.max(5, Math.min(60, editActivities[i].minutes + delta));
+  document.getElementById('editMin'+i).textContent = editActivities[i].minutes;
+}
+
+function delEditAct(i){
+  if(editActivities.length <= 1) return;
+  editActivities.splice(i, 1);
+  renderEditList();
+}
+
+function addActivity(){
+  editActivities.push({name:'📝 新活動', minutes:25});
+  renderEditList();
+  // 捲到底
+  const list = document.getElementById('actList');
+  list.lastChild.scrollIntoView({behavior:'smooth'});
+}
+
+function addPreset(name, minutes){
+  editActivities.push({name, minutes});
+  renderEditList();
+}
+
+function adjustBreak(delta){
+  breakMin = Math.max(1, Math.min(30, breakMin + delta));
+  document.getElementById('breakVal').textContent = breakMin;
+}
+
 function closeSettings(){
+  // 讀取 input 最新值
+  const inputs = document.querySelectorAll('#actList input[type=text]');
+  inputs.forEach((inp, i) => { if(editActivities[i]) editActivities[i].name = inp.value; });
+  activities = editActivities.map(a=>({...a}));
+  saveActivities();
   document.getElementById('settingsOverlay').classList.remove('show');
-  resetTimer();
-  updateStats();
+  resetAll();
 }
 
 function closeSettingsOutside(e){
   if(e.target === document.getElementById('settingsOverlay')) closeSettings();
 }
 
-function adjust(type, delta){
-  if(type === 'work'){
-    workMin = Math.max(5, Math.min(60, workMin + delta));
-    document.getElementById('workVal').textContent = workMin;
-    localStorage.setItem('pm_work', workMin);
-  } else if(type === 'break'){
-    breakMin = Math.max(1, Math.min(30, breakMin + delta));
-    document.getElementById('breakVal').textContent = breakMin;
-    localStorage.setItem('pm_break', breakMin);
-  } else {
-    goalCount = Math.max(1, Math.min(20, goalCount + delta));
-    document.getElementById('goalVal').textContent = goalCount;
-    localStorage.setItem('pm_goal', goalCount);
-  }
-}
-
 // ===== 鎖定 =====
 let lockTimer = null;
 function toggleLock(){
-  if(locked){
-    // 需要長按解鎖 — 這裡用 confirm 簡化
-    // 已改為長按事件
-  } else {
+  if(!locked){
     locked = true;
     localStorage.setItem('pm_locked', 'true');
     updateLockUI();
   }
 }
-
 function updateLockUI(){
   document.getElementById('lockBtn').textContent = locked ? '🔒' : '🔓';
 }
-
 function showLockedToast(){
   const t = document.getElementById('lockedToast');
   t.classList.remove('show');
-  void t.offsetWidth; // 重新觸發動畫
+  void t.offsetWidth;
   t.classList.add('show');
   setTimeout(()=> t.classList.remove('show'), 2000);
 }
 
-// 長按解鎖
 const lockBtnEl = document.getElementById('lockBtn');
 lockBtnEl.addEventListener('touchstart', e => {
   if(!locked) return;
@@ -391,7 +549,6 @@ lockBtnEl.addEventListener('touchstart', e => {
     locked = false;
     localStorage.setItem('pm_locked', 'false');
     updateLockUI();
-    // 震動提示
     if(navigator.vibrate) navigator.vibrate(100);
   }, 1500);
 });
@@ -406,21 +563,22 @@ lockBtnEl.addEventListener('mousedown', e => {
 });
 lockBtnEl.addEventListener('mouseup', ()=> clearTimeout(lockTimer));
 
-// ===== 初始化 =====
-updateLockUI();
-updateDisplay();
-updateStats();
-
-// 防止螢幕休眠（如果支援）
+// ===== 防止螢幕休眠 =====
+let wakeLockRef = null;
 async function keepAwake(){
   try {
     if('wakeLock' in navigator){
-      await navigator.wakeLock.request('screen');
+      wakeLockRef = await navigator.wakeLock.request('screen');
     }
   } catch(e){}
 }
 
-// 註冊 Service Worker
+// ===== 初始化 =====
+updateLockUI();
+buildSchedule();
+if(schedule.length > 0) loadCurrentPhase();
+updateDisplay();
+
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js');
 }
