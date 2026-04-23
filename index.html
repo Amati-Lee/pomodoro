@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>番茄鐘</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e74c3c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+
+.header{background:linear-gradient(135deg,#e74c3c,#c0392b);padding:14px 20px;text-align:center;position:relative}
+.header h1{font-size:20px;font-weight:600;color:#fff}
+.header .ver{font-size:11px;opacity:.6;color:#fff}
+.lock-btn{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:22px;cursor:pointer;padding:4px}
+
+.phase-bar{display:flex;background:#16213e}
+.phase-tab{flex:1;padding:10px 0;text-align:center;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;border-bottom:3px solid transparent}
+.phase-tab.active-work{color:#e74c3c;border-bottom-color:#e74c3c;background:#1a1a2e}
+.phase-tab.active-break{color:#27ae60;border-bottom-color:#27ae60;background:#1a1a2e}
+.phase-tab.inactive{color:#555}
+
+.main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+
+.timer-ring{position:relative;width:260px;height:260px;margin-bottom:24px}
+.timer-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.timer-ring .bg{fill:none;stroke:#2d2d4e;stroke-width:8}
+.timer-ring .progress{fill:none;stroke:#e74c3c;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .5s linear}
+.timer-ring.break .progress{stroke:#27ae60}
+.timer-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.timer-text .time{font-size:56px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:2px}
+.timer-text .label{font-size:14px;color:#888;margin-top:4px}
+
+.controls{display:flex;gap:16px;margin-bottom:20px}
+.ctrl-btn{width:64px;height:64px;border-radius:50%;border:none;font-size:26px;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center}
+.ctrl-btn:active{transform:scale(.9)}
+.btn-start{background:#e74c3c;color:#fff}
+.btn-start.running{background:#f39c12}
+.btn-reset{background:#333;color:#aaa}
+
+.stats{background:#16213e;border-radius:12px;padding:14px 20px;text-align:center;width:100%;max-width:300px}
+.stats .today{font-size:14px;color:#888}
+.stats .count{font-size:36px;font-weight:700;color:#e74c3c;margin:4px 0}
+.stats .count span{font-size:14px;font-weight:400;color:#888}
+.stats .total-time{font-size:12px;color:#666}
+
+/* 設定面板 */
+.settings-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center}
+.settings-overlay.show{display:flex}
+.settings-panel{background:#1a1a2e;border-radius:16px;padding:24px;width:90%;max-width:360px;border:1px solid #333}
+.settings-panel h2{font-size:18px;margin-bottom:16px;text-align:center}
+.setting-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:8px 0}
+.setting-row label{font-size:14px;color:#ccc}
+.setting-row .adjuster{display:flex;align-items:center;gap:10px}
+.adj-btn{width:36px;height:36px;border-radius:50%;border:1px solid #555;background:#2d2d4e;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.adj-btn:active{background:#e74c3c}
+.adj-val{font-size:20px;font-weight:600;min-width:40px;text-align:center}
+.settings-panel .close-btn{display:block;margin:8px auto 0;background:linear-gradient(135deg,#e74c3c,#c0392b);border:none;border-radius:8px;padding:10px 32px;color:#fff;font-size:15px;cursor:pointer}
+.gear-btn{position:absolute;left:14px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:20px;cursor:pointer;padding:4px}
+
+/* 鎖定提示 */
+.locked-toast{display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#e74c3c;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:200;white-space:nowrap}
+.locked-toast.show{display:block;animation:fadeout 2s forwards}
+@keyframes fadeout{0%,70%{opacity:1}100%{opacity:0;display:none}}
+
+/* 歷史 */
+.history{width:100%;max-width:360px;margin-top:16px}
+.history h3{font-size:13px;color:#666;margin-bottom:8px;padding-left:4px}
+.history-list{display:flex;flex-wrap:wrap;gap:6px}
+.dot{width:28px;height:28px;border-radius:50%;background:#2d2d4e;display:flex;align-items:center;justify-content:center;font-size:11px;color:#888}
+.dot.done{background:#e74c3c;color:#fff}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="gear-btn" onclick="openSettings()">⚙️</button>
+  <h1>🍅 番茄鐘 <span class="ver">v1.0</span></h1>
+  <button class="lock-btn" id="lockBtn" onclick="toggleLock()">🔓</button>
+</div>
+
+<div class="phase-bar">
+  <div class="phase-tab active-work" id="tabWork">🎯 專注</div>
+  <div class="phase-tab inactive" id="tabBreak">☕ 休息</div>
+</div>
+
+<div class="main">
+  <div class="timer-ring" id="timerRing">
+    <svg viewBox="0 0 200 200">
+      <circle class="bg" cx="100" cy="100" r="90"/>
+      <circle class="progress" id="progressRing" cx="100" cy="100" r="90"
+        stroke-dasharray="565.49" stroke-dashoffset="0"/>
+    </svg>
+    <div class="timer-text">
+      <div class="time" id="timeDisplay">25:00</div>
+      <div class="label" id="phaseLabel">準備開始</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="ctrl-btn btn-reset" onclick="resetTimer()">↺</button>
+    <button class="ctrl-btn btn-start" id="startBtn" onclick="toggleTimer()">▶</button>
+  </div>
+
+  <div class="stats">
+    <div class="today">今日完成</div>
+    <div class="count" id="todayCount">0 <span>輪</span></div>
+    <div class="total-time" id="todayTime">累計 0 分鐘專注</div>
+  </div>
+
+  <div class="history" id="historySection">
+    <h3>今日紀錄</h3>
+    <div class="history-list" id="historyList"></div>
+  </div>
+</div>
+
+<!-- 設定面板 -->
+<div class="settings-overlay" id="settingsOverlay" onclick="closeSettingsOutside(event)">
+  <div class="settings-panel">
+    <h2>⚙️ 設定</h2>
+    <div class="setting-row">
+      <label>🎯 專注時間</label>
+      <div class="adjuster">
+        <button class="adj-btn" onclick="adjust('work',-5)">−</button>
+        <span class="adj-val" id="workVal">25</span><span style="color:#888">分</span>
+        <button class="adj-btn" onclick="adjust('work',5)">+</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <label>☕ 休息時間</label>
+      <div class="adjuster">
+        <button class="adj-btn" onclick="adjust('break',-1)">−</button>
+        <span class="adj-val" id="breakVal">5</span><span style="color:#888">分</span>
+        <button class="adj-btn" onclick="adjust('break',1)">+</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <label>🎯 今日目標</label>
+      <div class="adjuster">
+        <button class="adj-btn" onclick="adjust('goal',-1)">−</button>
+        <span class="adj-val" id="goalVal">8</span><span style="color:#888">輪</span>
+        <button class="adj-btn" onclick="adjust('goal',1)">+</button>
+      </div>
+    </div>
+    <button class="close-btn" onclick="closeSettings()">確定</button>
+  </div>
+</div>
+
+<div class="locked-toast" id="lockedToast">🔒 已鎖定，長按鎖頭解鎖</div>
+
+<script>
+// ===== 設定 =====
+let workMin = parseInt(localStorage.getItem('pm_work')) || 25;
+let breakMin = parseInt(localStorage.getItem('pm_break')) || 5;
+let goalCount = parseInt(localStorage.getItem('pm_goal')) || 8;
+let locked = localStorage.getItem('pm_locked') === 'true';
+
+// ===== 狀態 =====
+let phase = 'work'; // 'work' | 'break'
+let totalSec = workMin * 60;
+let remainSec = totalSec;
+let running = false;
+let intervalId = null;
+
+// ===== 今日紀錄 =====
+function todayKey(){ return 'pm_' + new Date().toISOString().slice(0,10); }
+function loadToday(){
+  const d = JSON.parse(localStorage.getItem(todayKey()) || '{"count":0,"minutes":0,"times":[]}');
+  return d;
+}
+function saveToday(d){ localStorage.setItem(todayKey(), JSON.stringify(d)); }
+
+// ===== 音效 =====
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+function playSound(freq, duration){
+  if(!audioCtx) audioCtx = new AudioCtx();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.frequency.value = freq;
+  osc.type = 'sine';
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
+function playAlarm(){
+  // 三聲提示
+  playSound(880, 0.3);
+  setTimeout(()=>playSound(880, 0.3), 400);
+  setTimeout(()=>playSound(1100, 0.5), 800);
+}
+
+// ===== 環形進度 =====
+const circumference = 2 * Math.PI * 90; // 565.49
+function updateRing(){
+  const pct = remainSec / totalSec;
+  const offset = circumference * pct;
+  document.getElementById('progressRing').style.strokeDashoffset = offset;
+}
+
+// ===== 顯示更新 =====
+function updateDisplay(){
+  const min = Math.floor(remainSec / 60);
+  const sec = remainSec % 60;
+  document.getElementById('timeDisplay').textContent =
+    String(min).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+  updateRing();
+
+  // 相位標籤
+  const ring = document.getElementById('timerRing');
+  const tabW = document.getElementById('tabWork');
+  const tabB = document.getElementById('tabBreak');
+  if(phase === 'work'){
+    ring.classList.remove('break');
+    tabW.className = 'phase-tab active-work';
+    tabB.className = 'phase-tab inactive';
+    document.getElementById('phaseLabel').textContent = running ? '專注中...' : '準備開始';
+  } else {
+    ring.classList.add('break');
+    tabW.className = 'phase-tab inactive';
+    tabB.className = 'phase-tab active-break';
+    document.getElementById('phaseLabel').textContent = running ? '休息中...' : '休息時間';
+  }
+
+  // 按鈕狀態
+  const btn = document.getElementById('startBtn');
+  if(running){
+    btn.textContent = '⏸';
+    btn.classList.add('running');
+  } else {
+    btn.textContent = '▶';
+    btn.classList.remove('running');
+  }
+}
+
+function updateStats(){
+  const d = loadToday();
+  document.getElementById('todayCount').innerHTML = d.count + ' <span>/ ' + goalCount + ' 輪</span>';
+  document.getElementById('todayTime').textContent = '累計 ' + d.minutes + ' 分鐘專注';
+
+  // 歷史圓點
+  const list = document.getElementById('historyList');
+  list.innerHTML = '';
+  for(let i = 0; i < Math.max(goalCount, d.count); i++){
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i < d.count ? ' done' : '');
+    dot.textContent = i + 1;
+    list.appendChild(dot);
+  }
+}
+
+// ===== 計時器 =====
+function tick(){
+  if(remainSec <= 0){
+    clearInterval(intervalId);
+    running = false;
+    playAlarm();
+
+    if(phase === 'work'){
+      // 完成一輪
+      const d = loadToday();
+      d.count++;
+      d.minutes += workMin;
+      d.times.push(new Date().toTimeString().slice(0,5));
+      saveToday(d);
+      updateStats();
+
+      // 切到休息
+      phase = 'break';
+      totalSec = breakMin * 60;
+      remainSec = totalSec;
+      updateDisplay();
+      // 自動開始休息
+      setTimeout(()=>{ if(!running) toggleTimer(); }, 1500);
+    } else {
+      // 休息結束，切回專注
+      phase = 'work';
+      totalSec = workMin * 60;
+      remainSec = totalSec;
+      updateDisplay();
+    }
+    return;
+  }
+  remainSec--;
+  updateDisplay();
+  // 更新頁面標題
+  const min = Math.floor(remainSec / 60);
+  const sec = remainSec % 60;
+  document.title = `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')} - 番茄鐘`;
+}
+
+function toggleTimer(){
+  if(running){
+    clearInterval(intervalId);
+    running = false;
+  } else {
+    // 初始化 AudioContext（需要使用者互動）
+    if(!audioCtx) audioCtx = new AudioCtx();
+    running = true;
+    intervalId = setInterval(tick, 1000);
+  }
+  updateDisplay();
+}
+
+function resetTimer(){
+  clearInterval(intervalId);
+  running = false;
+  phase = 'work';
+  totalSec = workMin * 60;
+  remainSec = totalSec;
+  updateDisplay();
+  document.title = '番茄鐘';
+}
+
+// ===== 設定 =====
+function openSettings(){
+  if(locked){
+    showLockedToast();
+    return;
+  }
+  if(running) return; // 計時中不開設定
+  document.getElementById('workVal').textContent = workMin;
+  document.getElementById('breakVal').textContent = breakMin;
+  document.getElementById('goalVal').textContent = goalCount;
+  document.getElementById('settingsOverlay').classList.add('show');
+}
+
+function closeSettings(){
+  document.getElementById('settingsOverlay').classList.remove('show');
+  resetTimer();
+  updateStats();
+}
+
+function closeSettingsOutside(e){
+  if(e.target === document.getElementById('settingsOverlay')) closeSettings();
+}
+
+function adjust(type, delta){
+  if(type === 'work'){
+    workMin = Math.max(5, Math.min(60, workMin + delta));
+    document.getElementById('workVal').textContent = workMin;
+    localStorage.setItem('pm_work', workMin);
+  } else if(type === 'break'){
+    breakMin = Math.max(1, Math.min(30, breakMin + delta));
+    document.getElementById('breakVal').textContent = breakMin;
+    localStorage.setItem('pm_break', breakMin);
+  } else {
+    goalCount = Math.max(1, Math.min(20, goalCount + delta));
+    document.getElementById('goalVal').textContent = goalCount;
+    localStorage.setItem('pm_goal', goalCount);
+  }
+}
+
+// ===== 鎖定 =====
+let lockTimer = null;
+function toggleLock(){
+  if(locked){
+    // 需要長按解鎖 — 這裡用 confirm 簡化
+    // 已改為長按事件
+  } else {
+    locked = true;
+    localStorage.setItem('pm_locked', 'true');
+    updateLockUI();
+  }
+}
+
+function updateLockUI(){
+  document.getElementById('lockBtn').textContent = locked ? '🔒' : '🔓';
+}
+
+function showLockedToast(){
+  const t = document.getElementById('lockedToast');
+  t.classList.remove('show');
+  void t.offsetWidth; // 重新觸發動畫
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2000);
+}
+
+// 長按解鎖
+const lockBtnEl = document.getElementById('lockBtn');
+lockBtnEl.addEventListener('touchstart', e => {
+  if(!locked) return;
+  lockTimer = setTimeout(()=>{
+    locked = false;
+    localStorage.setItem('pm_locked', 'false');
+    updateLockUI();
+    // 震動提示
+    if(navigator.vibrate) navigator.vibrate(100);
+  }, 1500);
+});
+lockBtnEl.addEventListener('touchend', ()=> clearTimeout(lockTimer));
+lockBtnEl.addEventListener('mousedown', e => {
+  if(!locked) return;
+  lockTimer = setTimeout(()=>{
+    locked = false;
+    localStorage.setItem('pm_locked', 'false');
+    updateLockUI();
+  }, 1500);
+});
+lockBtnEl.addEventListener('mouseup', ()=> clearTimeout(lockTimer));
+
+// ===== 初始化 =====
+updateLockUI();
+updateDisplay();
+updateStats();
+
+// 防止螢幕休眠（如果支援）
+async function keepAwake(){
+  try {
+    if('wakeLock' in navigator){
+      await navigator.wakeLock.request('screen');
+    }
+  } catch(e){}
+}
+
+// 註冊 Service Worker
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
+</body>
+</html>
