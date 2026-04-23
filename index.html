@@ -104,6 +104,24 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
 .locked-toast.show{display:block;animation:fadeout 2s forwards}
 @keyframes fadeout{0%,70%{opacity:1}100%{opacity:0;display:none}}
 
+/* 密碼面板 */
+.pin-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;align-items:center;justify-content:center}
+.pin-overlay.show{display:flex}
+.pin-panel{background:#1a1a2e;border-radius:16px;padding:24px;width:85%;max-width:300px;border:1px solid #333;text-align:center}
+.pin-panel h3{font-size:16px;margin-bottom:6px;color:#fff}
+.pin-panel .pin-sub{font-size:12px;color:#888;margin-bottom:16px}
+.pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:20px}
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid #555;transition:.15s}
+.pin-dot.filled{background:#e74c3c;border-color:#e74c3c}
+.pin-dot.wrong{border-color:#e74c3c;animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:240px;margin:0 auto}
+.pin-key{background:#2d2d4e;border:none;border-radius:50%;width:56px;height:56px;font-size:22px;color:#fff;cursor:pointer;margin:0 auto;display:flex;align-items:center;justify-content:center;transition:.1s}
+.pin-key:active{background:#e74c3c;transform:scale(.9)}
+.pin-key.del{font-size:16px;color:#e74c3c;background:transparent;border:1px solid #555}
+.pin-key.cancel{font-size:13px;color:#888;background:transparent}
+.pin-error{color:#e74c3c;font-size:12px;margin-top:10px;min-height:16px}
+
 /* 全部完成 */
 .all-done{display:none;text-align:center;padding:40px 20px}
 .all-done.show{display:block}
@@ -116,7 +134,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
 
 <div class="header">
   <button class="gear-btn" onclick="openSettings()">⚙️</button>
-  <h1>🍅 番茄鐘 <span class="ver">v1.1</span></h1>
+  <h1>🍅 番茄鐘 <span class="ver">v1.2</span></h1>
   <button class="lock-btn" id="lockBtn" onclick="toggleLock()">🔓</button>
 </div>
 
@@ -192,7 +210,36 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
   </div>
 </div>
 
-<div class="locked-toast" id="lockedToast">🔒 已鎖定，長按鎖頭解鎖</div>
+<div class="locked-toast" id="lockedToast">🔒 已鎖定，需輸入密碼解鎖</div>
+
+<!-- 密碼面板 -->
+<div class="pin-overlay" id="pinOverlay">
+  <div class="pin-panel">
+    <h3 id="pinTitle">設定密碼</h3>
+    <div class="pin-sub" id="pinSub">請輸入 4 位數字密碼</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="dot0"></div>
+      <div class="pin-dot" id="dot1"></div>
+      <div class="pin-dot" id="dot2"></div>
+      <div class="pin-dot" id="dot3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pinInput(1)">1</button>
+      <button class="pin-key" onclick="pinInput(2)">2</button>
+      <button class="pin-key" onclick="pinInput(3)">3</button>
+      <button class="pin-key" onclick="pinInput(4)">4</button>
+      <button class="pin-key" onclick="pinInput(5)">5</button>
+      <button class="pin-key" onclick="pinInput(6)">6</button>
+      <button class="pin-key" onclick="pinInput(7)">7</button>
+      <button class="pin-key" onclick="pinInput(8)">8</button>
+      <button class="pin-key" onclick="pinInput(9)">9</button>
+      <button class="pin-key cancel" onclick="pinCancel()">取消</button>
+      <button class="pin-key" onclick="pinInput(0)">0</button>
+      <button class="pin-key del" onclick="pinDelete()">⌫</button>
+    </div>
+    <div class="pin-error" id="pinError"></div>
+  </div>
+</div>
 
 <script>
 // ===== 活動資料 =====
@@ -414,13 +461,10 @@ function toggleTimer(){
 }
 
 function skipCurrent(){
+  if(locked){ showLockedToast(); return; }
   if(scheduleIdx >= schedule.length) return;
   clearInterval(intervalId);
   running = false;
-  const cur = schedule[scheduleIdx];
-  if(cur.type === 'work'){
-    // 跳過不算完成
-  }
   scheduleIdx++;
   if(scheduleIdx < schedule.length){
     loadCurrentPhase();
@@ -429,6 +473,7 @@ function skipCurrent(){
 }
 
 function resetAll(){
+  if(locked){ showLockedToast(); return; }
   clearInterval(intervalId);
   running = false;
   scheduleIdx = 0;
@@ -522,18 +567,121 @@ function closeSettingsOutside(e){
   if(e.target === document.getElementById('settingsOverlay')) closeSettings();
 }
 
-// ===== 鎖定 =====
-let lockTimer = null;
+// ===== 密碼鎖 =====
+let pinCode = localStorage.getItem('pm_pin') || ''; // 存的密碼
+let pinBuffer = '';
+let pinMode = ''; // 'set' | 'confirm' | 'unlock'
+let pinFirstEntry = '';
+
 function toggleLock(){
-  if(!locked){
-    locked = true;
-    localStorage.setItem('pm_locked', 'true');
-    updateLockUI();
+  if(locked){
+    // 解鎖：輸入密碼
+    pinMode = 'unlock';
+    pinBuffer = '';
+    document.getElementById('pinTitle').textContent = '🔓 輸入密碼';
+    document.getElementById('pinSub').textContent = '請輸入 4 位數字密碼解鎖';
+    document.getElementById('pinError').textContent = '';
+    updatePinDots();
+    document.getElementById('pinOverlay').classList.add('show');
+  } else {
+    // 鎖定：先設密碼
+    pinMode = 'set';
+    pinBuffer = '';
+    pinFirstEntry = '';
+    document.getElementById('pinTitle').textContent = '🔒 設定密碼';
+    document.getElementById('pinSub').textContent = '請輸入 4 位數字密碼';
+    document.getElementById('pinError').textContent = '';
+    updatePinDots();
+    document.getElementById('pinOverlay').classList.add('show');
   }
 }
+
+function pinInput(n){
+  if(pinBuffer.length >= 4) return;
+  pinBuffer += n;
+  updatePinDots();
+  if(pinBuffer.length === 4){
+    setTimeout(handlePinComplete, 200);
+  }
+}
+
+function pinDelete(){
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pinError').textContent = '';
+}
+
+function pinCancel(){
+  document.getElementById('pinOverlay').classList.remove('show');
+  pinBuffer = '';
+}
+
+function updatePinDots(){
+  for(let i = 0; i < 4; i++){
+    const dot = document.getElementById('dot'+i);
+    dot.classList.toggle('filled', i < pinBuffer.length);
+    dot.classList.remove('wrong');
+  }
+}
+
+function shakeDotsAndClear(){
+  for(let i = 0; i < 4; i++){
+    const dot = document.getElementById('dot'+i);
+    dot.classList.add('wrong');
+    dot.classList.remove('filled');
+  }
+  pinBuffer = '';
+  if(navigator.vibrate) navigator.vibrate(200);
+}
+
+function handlePinComplete(){
+  if(pinMode === 'set'){
+    // 第一次輸入
+    pinFirstEntry = pinBuffer;
+    pinBuffer = '';
+    pinMode = 'confirm';
+    document.getElementById('pinTitle').textContent = '🔒 確認密碼';
+    document.getElementById('pinSub').textContent = '請再輸入一次確認';
+    document.getElementById('pinError').textContent = '';
+    updatePinDots();
+  } else if(pinMode === 'confirm'){
+    if(pinBuffer === pinFirstEntry){
+      // 設定成功
+      pinCode = pinBuffer;
+      localStorage.setItem('pm_pin', pinCode);
+      locked = true;
+      localStorage.setItem('pm_locked', 'true');
+      updateLockUI();
+      document.getElementById('pinOverlay').classList.remove('show');
+    } else {
+      document.getElementById('pinError').textContent = '兩次密碼不一致，請重新設定';
+      shakeDotsAndClear();
+      pinMode = 'set';
+      pinFirstEntry = '';
+      setTimeout(()=>{
+        document.getElementById('pinTitle').textContent = '🔒 設定密碼';
+        document.getElementById('pinSub').textContent = '請輸入 4 位數字密碼';
+      }, 300);
+    }
+  } else if(pinMode === 'unlock'){
+    if(pinBuffer === pinCode){
+      // 解鎖成功
+      locked = false;
+      localStorage.setItem('pm_locked', 'false');
+      updateLockUI();
+      document.getElementById('pinOverlay').classList.remove('show');
+      if(navigator.vibrate) navigator.vibrate(100);
+    } else {
+      document.getElementById('pinError').textContent = '密碼錯誤';
+      shakeDotsAndClear();
+    }
+  }
+}
+
 function updateLockUI(){
   document.getElementById('lockBtn').textContent = locked ? '🔒' : '🔓';
 }
+
 function showLockedToast(){
   const t = document.getElementById('lockedToast');
   t.classList.remove('show');
@@ -541,27 +689,6 @@ function showLockedToast(){
   t.classList.add('show');
   setTimeout(()=> t.classList.remove('show'), 2000);
 }
-
-const lockBtnEl = document.getElementById('lockBtn');
-lockBtnEl.addEventListener('touchstart', e => {
-  if(!locked) return;
-  lockTimer = setTimeout(()=>{
-    locked = false;
-    localStorage.setItem('pm_locked', 'false');
-    updateLockUI();
-    if(navigator.vibrate) navigator.vibrate(100);
-  }, 1500);
-});
-lockBtnEl.addEventListener('touchend', ()=> clearTimeout(lockTimer));
-lockBtnEl.addEventListener('mousedown', e => {
-  if(!locked) return;
-  lockTimer = setTimeout(()=>{
-    locked = false;
-    localStorage.setItem('pm_locked', 'false');
-    updateLockUI();
-  }, 1500);
-});
-lockBtnEl.addEventListener('mouseup', ()=> clearTimeout(lockTimer));
 
 // ===== 防止螢幕休眠 =====
 let wakeLockRef = null;
