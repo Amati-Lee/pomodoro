@@ -134,7 +134,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
 
 <div class="header">
   <button class="gear-btn" onclick="openSettings()">⚙️</button>
-  <h1>🍅 番茄鐘 <span class="ver">v1.2</span></h1>
+  <h1>🍅 番茄鐘 <span class="ver">v1.3</span></h1>
   <button class="lock-btn" id="lockBtn" onclick="toggleLock()">🔓</button>
 </div>
 
@@ -572,6 +572,9 @@ let pinCode = localStorage.getItem('pm_pin') || ''; // 存的密碼
 let pinBuffer = '';
 let pinMode = ''; // 'set' | 'confirm' | 'unlock'
 let pinFirstEntry = '';
+let wrongCount = 0;
+let forceUnlockTimer = null;
+let forceUnlockStart = 0;
 
 function toggleLock(){
   if(locked){
@@ -667,12 +670,18 @@ function handlePinComplete(){
     if(pinBuffer === pinCode){
       // 解鎖成功
       locked = false;
+      wrongCount = 0;
       localStorage.setItem('pm_locked', 'false');
       updateLockUI();
       document.getElementById('pinOverlay').classList.remove('show');
       if(navigator.vibrate) navigator.vibrate(100);
     } else {
-      document.getElementById('pinError').textContent = '密碼錯誤';
+      wrongCount++;
+      if(wrongCount >= 5){
+        document.getElementById('pinError').textContent = '錯誤 ' + wrongCount + ' 次，長按 🔒 10 秒可強制解鎖';
+      } else {
+        document.getElementById('pinError').textContent = '密碼錯誤（' + wrongCount + '/5）';
+      }
       shakeDotsAndClear();
     }
   }
@@ -689,6 +698,34 @@ function showLockedToast(){
   t.classList.add('show');
   setTimeout(()=> t.classList.remove('show'), 2000);
 }
+
+// 長按 10 秒強制解鎖（需先錯 5 次）
+const lockBtnEl = document.getElementById('lockBtn');
+function startForceUnlock(){
+  if(!locked || wrongCount < 5) return;
+  forceUnlockStart = Date.now();
+  forceUnlockTimer = setTimeout(()=>{
+    locked = false;
+    wrongCount = 0;
+    pinCode = '';
+    localStorage.removeItem('pm_pin');
+    localStorage.setItem('pm_locked', 'false');
+    updateLockUI();
+    document.getElementById('pinOverlay').classList.remove('show');
+    if(navigator.vibrate) navigator.vibrate([100,50,100,50,200]);
+  }, 10000);
+}
+function cancelForceUnlock(){
+  if(forceUnlockTimer){
+    clearTimeout(forceUnlockTimer);
+    forceUnlockTimer = null;
+  }
+}
+lockBtnEl.addEventListener('touchstart', startForceUnlock);
+lockBtnEl.addEventListener('touchend', cancelForceUnlock);
+lockBtnEl.addEventListener('touchcancel', cancelForceUnlock);
+lockBtnEl.addEventListener('mousedown', startForceUnlock);
+lockBtnEl.addEventListener('mouseup', cancelForceUnlock);
 
 // ===== 防止螢幕休眠 =====
 let wakeLockRef = null;
