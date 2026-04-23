@@ -409,6 +409,13 @@ function loadCurrentPhase(){
 }
 
 function tick(){
+  // 用 deadline 計算精確剩餘（防背景 throttle 造成偏差）
+  if(timerDeadline > 0){
+    remainSec = Math.max(0, Math.round((timerDeadline - Date.now()) / 1000));
+  } else {
+    remainSec--;
+  }
+
   if(remainSec <= 0){
     clearInterval(intervalId);
     running = false;
@@ -427,19 +434,18 @@ function tick(){
     }
 
     scheduleIdx++;
+    saveState();
     if(scheduleIdx < schedule.length){
       loadCurrentPhase();
       updateDisplay();
-      // 自動開始下一項（休息或活動）
       setTimeout(()=>{ if(!running) toggleTimer(); }, 1500);
     } else {
-      // 全部完成
       playComplete();
+      clearState();
       updateDisplay();
     }
     return;
   }
-  remainSec--;
   updateDisplay();
   const min = Math.floor(remainSec / 60);
   const sec = remainSec % 60;
@@ -452,13 +458,77 @@ function toggleTimer(){
   if(running){
     clearInterval(intervalId);
     running = false;
+    saveState();
   } else {
     if(!audioCtx) audioCtx = new AudioCtx();
     keepAwake();
     running = true;
+    timerDeadline = Date.now() + remainSec * 1000;
     intervalId = setInterval(tick, 1000);
+    saveState();
   }
   updateDisplay();
+}
+
+// ===== 狀態持久化（防背景被殺）=====
+let timerDeadline = 0; // 預計結束的 timestamp
+
+function saveState(){
+  const state = {
+    scheduleIdx,
+    remainSec,
+    running,
+    timerDeadline,
+    completedActivities,
+    totalSec
+  };
+  localStorage.setItem('pm_state', JSON.stringify(state));
+}
+
+function restoreState(){
+  const raw = localStorage.getItem('pm_state');
+  if(!raw) return false;
+  try {
+    const state = JSON.parse(raw);
+    // 檢查是否同一組活動（防改設定後恢復舊狀態）
+    const savedActs = localStorage.getItem('pm_activities');
+    buildSchedule();
+    if(state.scheduleIdx >= schedule.length) return false;
+
+    scheduleIdx = state.scheduleIdx;
+    completedActivities = state.completedActivities || [];
+    totalSec = state.totalSec;
+
+    if(state.running && state.timerDeadline > 0){
+      // 計算離開期間經過的時間
+      const now = Date.now();
+      const newRemain = Math.round((state.timerDeadline - now) / 1000);
+      if(newRemain > 0){
+        remainSec = newRemain;
+        running = false; // 先設 false，讓 toggleTimer 啟動
+        updateDisplay();
+        toggleTimer(); // 重新啟動計時
+        return true;
+      } else {
+        // 時間已到，觸發完成
+        remainSec = 0;
+        running = false;
+        updateDisplay();
+        tick(); // 觸發完成邏輯
+        return true;
+      }
+    } else {
+      // 暫停狀態恢復
+      remainSec = state.remainSec;
+      running = false;
+      updateDisplay();
+      return true;
+    }
+  } catch(e){ return false; }
+}
+
+function clearState(){
+  localStorage.removeItem('pm_state');
 }
 
 function skipCurrent(){
@@ -479,8 +549,10 @@ function resetAll(){
   running = false;
   scheduleIdx = 0;
   completedActivities = [];
+  timerDeadline = 0;
   buildSchedule();
   if(schedule.length > 0) loadCurrentPhase();
+  clearState();
   updateDisplay();
   document.title = '番茄鐘';
 }
@@ -747,11 +819,21 @@ async function keepAwake(){
   } catch(e){}
 }
 
-// ===== 初始化 =====
+// ===== 初始化：優先恢復存檔 =====
 updateLockUI();
-buildSchedule();
-if(schedule.length > 0) loadCurrentPhase();
-updateDisplay();
+if(!restoreState()){
+  buildSchedule();
+  if(schedule.length > 0) loadCurrentPhase();
+  updateDisplay();
+}
+
+// ===== 頁面離開時存檔 =====
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden && running) saveState();
+});
+window.addEventListener('beforeunload', ()=>{
+  if(running) saveState();
+});
 
 // ===== 全螢幕守護：鎖定時退出全螢幕會自動重進 =====
 document.addEventListener('fullscreenchange', ()=>{
@@ -763,28 +845,6 @@ document.addEventListener('fullscreenchange', ()=>{
         if(rfs) rfs.call(el).catch(()=>{});
       }
     }, 500);
-  }
-});
-
-// ===== 背景恢復：切回來時補上離開的時間 =====
-let timerStartedAt = 0; // 當前階段開始的 timestamp
-let timerStartRemain = 0; // 開始時剩餘秒數
-
-const _origToggle = toggleTimer;
-toggleTimer = function(){
-  _origToggle();
-  if(running){
-    timerStartedAt = Date.now();
-    timerStartRemain = remainSec;
-  }
-};
-
-document.addEventListener('visibilitychange', ()=>{
-  if(!document.hidden && running && timerStartedAt > 0){
-    const elapsed = Math.floor((Date.now() - timerStartedAt) / 1000);
-    remainSec = Math.max(0, timerStartRemain - elapsed);
-    updateDisplay();
-    if(remainSec <= 0) tick(); // 觸發完成
   }
 });
 
