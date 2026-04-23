@@ -677,10 +677,10 @@ function handlePinComplete(){
       if(navigator.vibrate) navigator.vibrate(100);
     } else {
       wrongCount++;
-      if(wrongCount >= 5){
+      if(wrongCount >= 10){
         document.getElementById('pinError').textContent = '錯誤 ' + wrongCount + ' 次，長按 🔒 10 秒可強制解鎖';
       } else {
-        document.getElementById('pinError').textContent = '密碼錯誤（' + wrongCount + '/5）';
+        document.getElementById('pinError').textContent = '密碼錯誤（' + wrongCount + '/10）';
       }
       shakeDotsAndClear();
     }
