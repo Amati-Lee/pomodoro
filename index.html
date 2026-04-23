@@ -690,6 +690,15 @@ function handlePinComplete(){
 
 function updateLockUI(){
   document.getElementById('lockBtn').textContent = locked ? '🔒' : '🔓';
+  // 鎖定時進入全螢幕，解鎖時退出
+  if(locked){
+    const el = document.documentElement;
+    const rfs = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if(rfs) rfs.call(el).catch(()=>{});
+  } else {
+    const efs = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+    if(efs && document.fullscreenElement) efs.call(document).catch(()=>{});
+  }
 }
 
 function showLockedToast(){
@@ -743,6 +752,19 @@ updateLockUI();
 buildSchedule();
 if(schedule.length > 0) loadCurrentPhase();
 updateDisplay();
+
+// ===== 全螢幕守護：鎖定時退出全螢幕會自動重進 =====
+document.addEventListener('fullscreenchange', ()=>{
+  if(locked && !document.fullscreenElement){
+    setTimeout(()=>{
+      if(locked){
+        const el = document.documentElement;
+        const rfs = el.requestFullscreen || el.webkitRequestFullscreen;
+        if(rfs) rfs.call(el).catch(()=>{});
+      }
+    }, 500);
+  }
+});
 
 // ===== 背景恢復：切回來時補上離開的時間 =====
 let timerStartedAt = 0; // 當前階段開始的 timestamp
