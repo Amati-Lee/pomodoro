@@ -60,8 +60,9 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
 .stats .today{font-size:13px;color:#888}
 .stats .count{font-size:28px;font-weight:700;color:#e74c3c;margin:2px 0}
 .stats .count span{font-size:13px;font-weight:400;color:#888}
-.stats{cursor:pointer}
 .stats .total-time{font-size:12px;color:#666}
+.history-btn{width:100%;max-width:340px;margin-top:10px;padding:10px;background:#16213e;border:1px solid #333;border-radius:10px;color:#ccc;font-size:14px;cursor:pointer;transition:.15s}
+.history-btn:active{background:#2d2d4e}
 .streak{font-size:12px;color:#f39c12;margin-top:4px}
 
 /* 紀錄面板 */
@@ -193,11 +194,13 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
     </div>
   </div>
 
-  <div class="stats" onclick="openHistory()">
-    <div class="today">今日累計 <span style="font-size:11px;color:#555">（點擊看紀錄）</span></div>
+  <div class="stats">
+    <div class="today">今日累計</div>
     <div class="count" id="todayCount">0 <span>分鐘專注</span></div>
     <div class="streak" id="streakInfo"></div>
   </div>
+
+  <button class="history-btn" onclick="openHistory()">📊 查看紀錄</button>
 
   <div class="done-list" id="doneList">
     <h3>已完成</h3>
