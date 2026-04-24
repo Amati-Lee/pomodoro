@@ -18,7 +18,8 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
 .header h1{font-size:20px;font-weight:600;color:#fff}
 .header .ver{font-size:11px;opacity:.6;color:#fff}
 .lock-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;display:flex;flex-direction:column;align-items:center;gap:0}
-.lock-btn .lock-icon{font-size:26px;line-height:1}
+.lock-btn .lock-icon{font-size:26px;line-height:1;transition:.2s}
+.lock-btn .lock-icon.unlocked{transform:translateY(-3px) scale(1.15)}
 .lock-btn .lock-label{font-size:9px;color:#fff;opacity:.8}
 .gear-btn{position:absolute;left:14px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:20px;cursor:pointer;padding:4px}
 
@@ -1001,8 +1002,11 @@ function handlePinComplete(){
 }
 
 function updateLockUI(){
-  document.getElementById('lockIcon').textContent = locked ? '🔒' : '🔓';
+  const icon = document.getElementById('lockIcon');
+  icon.textContent = locked ? '🔒' : '🔓';
+  icon.classList.toggle('unlocked', !locked);
   document.getElementById('lockLabel').textContent = locked ? '已鎖' : '未鎖';
+  document.getElementById('lockLabel').style.color = locked ? '#ff6b6b' : '#fff';
   // 鎖定時進入全螢幕，解鎖時退出
   if(locked){
     const el = document.documentElement;
