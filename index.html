@@ -17,7 +17,9 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
 .header{background:linear-gradient(135deg,#e74c3c,#c0392b);padding:14px 20px;text-align:center;position:relative}
 .header h1{font-size:20px;font-weight:600;color:#fff}
 .header .ver{font-size:11px;opacity:.6;color:#fff}
-.lock-btn{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:22px;cursor:pointer;padding:4px}
+.lock-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;gap:2px}
+.lock-btn svg{width:22px;height:22px;fill:#fff}
+.lock-btn .lock-label{font-size:9px;color:#fff;opacity:.7}
 .gear-btn{position:absolute;left:14px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:20px;cursor:pointer;padding:4px}
 
 /* 活動列表 */
@@ -167,7 +169,10 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
 <div class="header">
   <button class="gear-btn" onclick="openSettings()">⚙️</button>
   <h1>🍅 番茄鐘 <span class="ver">v1.4</span></h1>
-  <button class="lock-btn" id="lockBtn" onclick="toggleLock()">🔓</button>
+  <button class="lock-btn" id="lockBtn" onclick="toggleLock()">
+    <svg id="lockIcon" viewBox="0 0 24 24"><path id="lockPath" d=""/></svg>
+    <span class="lock-label" id="lockLabel"></span>
+  </button>
 </div>
 
 <div class="activity-bar" id="activityBar"></div>
@@ -995,8 +1000,15 @@ function handlePinComplete(){
   }
 }
 
+// SVG path: 鎖住（鉤環閉合）
+const LOCK_CLOSED = 'M12 2C9.24 2 7 4.24 7 7v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7c0-2.76-2.24-5-5-5zm0 2c1.66 0 3 1.34 3 3v3H9V7c0-1.66 1.34-3 3-3zm0 10a2 2 0 1 1 0 4 2 2 0 0 1 0-4z';
+// SVG path: 解鎖（鉤環打開向右翻）
+const LOCK_OPEN = 'M12 2c2.76 0 5 2.24 5 5h-2c0-1.66-1.34-3-3-3S9 5.34 9 7v3h9a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1V7c0-2.76 2.24-5 5-5zm0 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4z';
+
 function updateLockUI(){
-  document.getElementById('lockBtn').textContent = locked ? '🔒' : '🔓';
+  document.getElementById('lockPath').setAttribute('d', locked ? LOCK_CLOSED : LOCK_OPEN);
+  document.getElementById('lockIcon').style.fill = locked ? '#fff' : '#fff';
+  document.getElementById('lockLabel').textContent = locked ? '已鎖' : '未鎖';
   // 鎖定時進入全螢幕，解鎖時退出
   if(locked){
     const el = document.documentElement;
