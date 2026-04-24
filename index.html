@@ -71,15 +71,21 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
 .streak-summary .streak-num{font-size:36px;font-weight:700;color:#f39c12}
 .streak-summary .streak-label{font-size:13px;color:#888;margin-top:2px}
 .streak-summary .week-total{font-size:14px;color:#ccc;margin-top:8px}
-.history-list .day-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin-bottom:4px;background:#16213e;border-radius:8px}
-.history-list .day-row.today{border:1px solid #e74c3c44}
+.day-card{background:#16213e;border-radius:10px;margin-bottom:8px;overflow:hidden}
+.day-card.today{border:1px solid #e74c3c44}
+.day-header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer}
 .day-date{font-size:13px;color:#ccc}
 .day-date .weekday{color:#888;margin-left:4px;font-size:11px}
-.day-stats{text-align:right}
-.day-stats .day-min{font-size:16px;font-weight:600;color:#e74c3c}
-.day-stats .day-min span{font-size:11px;font-weight:400;color:#888}
-.day-stats .day-acts{font-size:11px;color:#666;margin-top:1px}
-.day-row .star{font-size:16px;margin-left:8px}
+.day-summary{display:flex;align-items:center;gap:6px}
+.day-summary .day-min{font-size:16px;font-weight:600;color:#e74c3c}
+.day-summary .day-min span{font-size:11px;font-weight:400;color:#888}
+.day-summary .star{font-size:16px}
+.day-detail{padding:0 12px 10px}
+.day-act-group{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-top:1px solid #ffffff08}
+.day-act-group .act-name{font-size:12px;color:#aaa}
+.day-act-group .act-info{font-size:12px;color:#888;text-align:right}
+.day-act-group .act-info b{color:#ccc;font-weight:600}
+.day-times{font-size:11px;color:#555;margin-top:2px}
 .no-record{text-align:center;color:#555;font-size:13px;padding:20px 0}
 
 /* 完成列表 */
@@ -748,17 +754,31 @@ function openHistory(){
     list.innerHTML = rows.map(d => {
       const isToday = d.date === todayStr;
       const star = getStarForMin(d.totalMin);
-      const actNames = d.records.map(r => r.name).filter(Boolean);
-      const unique = [...new Set(actNames)].join('、');
-      return `<div class="day-row${isToday ? ' today' : ''}">
-        <div class="day-date">${d.date.slice(5)} <span class="weekday">週${d.weekday}</span>${isToday ? ' <span style="color:#e74c3c;font-size:11px">今天</span>' : ''}</div>
-        <div style="display:flex;align-items:center">
-          <div class="day-stats">
-            <div class="day-min">${d.totalMin} <span>分鐘</span></div>
-            <div class="day-acts">${d.count} 項${unique ? ' · ' + unique : ''}</div>
-          </div>
-          <span class="star">${star}</span>
+      // 按活動名稱分類
+      const groups = {};
+      d.records.forEach(r => {
+        const name = r.name || '未命名';
+        if(!groups[name]) groups[name] = { min: 0, count: 0, times: [] };
+        groups[name].min += (r.minutes || 0);
+        groups[name].count++;
+        if(r.time) groups[name].times.push(r.time);
+      });
+      const groupHtml = Object.entries(groups).map(([name, g]) =>
+        `<div class="day-act-group">
+          <span class="act-name">${name}</span>
+          <span class="act-info"><b>${g.min}</b> 分鐘 × ${g.count}</span>
         </div>
+        <div class="day-times">${g.times.join('、')}</div>`
+      ).join('');
+      return `<div class="day-card${isToday ? ' today' : ''}">
+        <div class="day-header">
+          <div class="day-date">${d.date.slice(5)} <span class="weekday">週${d.weekday}</span>${isToday ? ' <span style="color:#e74c3c;font-size:11px">今天</span>' : ''}</div>
+          <div class="day-summary">
+            <div class="day-min">${d.totalMin} <span>分鐘</span></div>
+            <span class="star">${star}</span>
+          </div>
+        </div>
+        <div class="day-detail">${groupHtml}</div>
       </div>`;
     }).join('');
   }
