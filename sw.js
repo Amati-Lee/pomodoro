@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pomodoro-v6';
+const CACHE_NAME = 'pomodoro-v7';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
