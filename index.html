@@ -587,9 +587,9 @@ function renderEditList(){
     row.innerHTML = `
       <input type="text" value="${a.name}" onchange="editActivities[${i}].name=this.value" placeholder="活動名稱">
       <div class="min-adj">
-        <button class="min-btn" onclick="adjEditMin(${i},-5)">−</button>
+        <button class="min-btn" onclick="adjEditMin(${i},-1)">−</button>
         <span class="min-val" id="editMin${i}">${a.minutes}</span><span style="color:#888;font-size:12px">分</span>
-        <button class="min-btn" onclick="adjEditMin(${i},5)">+</button>
+        <button class="min-btn" onclick="adjEditMin(${i},1)">+</button>
       </div>
       <button class="del-btn" onclick="delEditAct(${i})">✕</button>
     `;
@@ -598,7 +598,7 @@ function renderEditList(){
 }
 
 function adjEditMin(i, delta){
-  editActivities[i].minutes = Math.max(5, Math.min(60, editActivities[i].minutes + delta));
+  editActivities[i].minutes = Math.max(1, Math.min(60, editActivities[i].minutes + delta));
   document.getElementById('editMin'+i).textContent = editActivities[i].minutes;
 }
 
