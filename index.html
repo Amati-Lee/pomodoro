@@ -206,7 +206,10 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
     <div class="streak" id="streakInfo"></div>
   </div>
 
-  <button class="history-btn" onclick="openHistory()">📊 查看紀錄</button>
+  <div style="display:flex;gap:8px;width:100%;max-width:340px;margin-top:10px">
+    <button class="history-btn" onclick="openHistory()" style="flex:1;margin-top:0">📊 查看紀錄</button>
+    <a href="rewards.html" class="history-btn" style="flex:1;margin-top:0;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center">🎁 獎勵兌換</a>
+  </div>
 
   <div class="done-list" id="doneList">
     <h3>已完成</h3>

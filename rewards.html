@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>獎勵兌換</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f39c12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+
+.header{background:linear-gradient(135deg,#f39c12,#e67e22);padding:14px 20px;text-align:center;position:relative}
+.header h1{font-size:20px;font-weight:600;color:#fff}
+.header .ver{font-size:11px;opacity:.6;color:#fff}
+.back-btn{position:absolute;left:14px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:18px;cursor:pointer;color:#fff;text-decoration:none}
+.gear-btn{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:20px;cursor:pointer}
+
+.main{flex:1;display:flex;flex-direction:column;align-items:center;padding:16px}
+
+/* 點數顯示 */
+.points-card{background:linear-gradient(135deg,#16213e,#1a1a3e);border:1px solid #f39c1244;border-radius:16px;padding:20px;text-align:center;width:100%;max-width:360px;margin-bottom:16px}
+.points-label{font-size:13px;color:#888}
+.points-num{font-size:48px;font-weight:700;color:#f39c12;margin:4px 0;font-variant-numeric:tabular-nums}
+.points-sub{font-size:12px;color:#666}
+
+/* 獎勵列表 */
+.rewards-section{width:100%;max-width:360px}
+.rewards-section h3{font-size:14px;color:#888;margin-bottom:8px}
+.reward-card{background:#16213e;border-radius:12px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:.15s;border:2px solid transparent}
+.reward-card:active{transform:scale(.98)}
+.reward-card.affordable{border-color:#f39c1244}
+.reward-card.affordable:active{border-color:#f39c12}
+.reward-card.locked{opacity:.5;cursor:default}
+.reward-emoji{font-size:32px;min-width:40px;text-align:center}
+.reward-info{flex:1}
+.reward-name{font-size:15px;font-weight:600;color:#e0e0e0}
+.reward-cost{font-size:13px;color:#f39c12;margin-top:2px}
+.reward-card.locked .reward-cost{color:#666}
+.reward-progress{height:4px;background:#2d2d4e;border-radius:2px;margin-top:6px;overflow:hidden}
+.reward-progress-fill{height:100%;background:#f39c12;border-radius:2px;transition:width .3s}
+
+/* 兌換紀錄 */
+.history-section{width:100%;max-width:360px;margin-top:16px}
+.history-section h3{font-size:14px;color:#888;margin-bottom:8px}
+.history-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#16213e;border-radius:8px;margin-bottom:4px;font-size:13px}
+.history-item .h-name{color:#ccc}
+.history-item .h-cost{color:#e74c3c;font-weight:600}
+.history-item .h-date{color:#666;font-size:11px}
+
+/* 空狀態 */
+.empty{text-align:center;color:#555;padding:30px 0;font-size:14px}
+
+/* 兌換確認 overlay */
+.confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;align-items:center;justify-content:center}
+.confirm-overlay.show{display:flex}
+.confirm-panel{background:#1a1a2e;border-radius:16px;padding:24px;width:88%;max-width:320px;border:1px solid #333;text-align:center}
+.confirm-panel .c-emoji{font-size:48px;margin-bottom:8px}
+.confirm-panel .c-name{font-size:18px;font-weight:600;color:#fff;margin-bottom:4px}
+.confirm-panel .c-cost{font-size:15px;color:#f39c12;margin-bottom:16px}
+.confirm-panel .c-hint{font-size:13px;color:#888;margin-bottom:12px}
+.pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:16px}
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid #555;transition:.15s}
+.pin-dot.filled{background:#f39c12;border-color:#f39c12}
+.pin-dot.wrong{border-color:#e74c3c;animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:240px;margin:0 auto}
+.pin-key{background:#2d2d4e;border:none;border-radius:50%;width:52px;height:52px;font-size:20px;color:#fff;cursor:pointer;margin:0 auto;display:flex;align-items:center;justify-content:center;transition:.1s}
+.pin-key:active{background:#f39c12;transform:scale(.9)}
+.pin-key.del{font-size:16px;color:#e74c3c;background:transparent;border:1px solid #555}
+.pin-key.cancel{font-size:13px;color:#888;background:transparent}
+.pin-error{color:#e74c3c;font-size:12px;margin-top:8px;min-height:16px}
+
+/* 設定面板 */
+.settings-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 0}
+.settings-overlay.show{display:flex}
+.settings-panel{background:#1a1a2e;border-radius:16px;padding:20px;width:92%;max-width:400px;border:1px solid #333}
+.settings-panel h2{font-size:18px;margin-bottom:12px;text-align:center}
+.section-title{font-size:14px;color:#f39c12;margin:12px 0 8px;padding-bottom:4px;border-bottom:1px solid #333}
+
+/* 倍率設定 */
+.mult-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0}
+.mult-row .m-name{font-size:14px;color:#ccc;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mult-row .m-val{display:flex;align-items:center;gap:6px}
+.mult-row .m-btn{width:28px;height:28px;border-radius:50%;border:1px solid #555;background:#2d2d4e;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.mult-row .m-btn:active{background:#f39c12}
+.mult-row .m-num{font-size:15px;font-weight:600;min-width:24px;text-align:center;color:#f39c12}
+.mult-default{background:#16213e;border-radius:8px;padding:10px 12px;margin-bottom:8px}
+
+/* 獎勵編輯 */
+.rw-row{display:flex;align-items:center;gap:6px;padding:8px;margin-bottom:6px;background:#16213e;border-radius:10px}
+.rw-row input[type=text]{flex:1;min-width:0;background:#0f0f23;border:1px solid #333;border-radius:6px;padding:7px;font-size:13px;color:#fff;outline:none}
+.rw-row input[type=text]:focus{border-color:#f39c12}
+.rw-row .rw-pts{width:60px}
+.rw-row .del-btn{background:none;border:none;color:#e74c3c;font-size:18px;cursor:pointer;padding:4px}
+.add-rw-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px;background:#2d2d4e;border:1px dashed #555;border-radius:10px;color:#aaa;font-size:14px;cursor:pointer;margin-bottom:12px}
+
+.settings-panel .close-btn{display:block;margin:12px auto 0;background:linear-gradient(135deg,#f39c12,#e67e22);border:none;border-radius:8px;padding:10px 32px;color:#fff;font-size:15px;cursor:pointer}
+
+/* PIN 設定 */
+.pin-setup{text-align:center;margin-bottom:12px}
+.pin-setup .pin-status{font-size:13px;color:#888;margin-bottom:6px}
+.pin-setup button{background:#2d2d4e;border:1px solid #555;border-radius:8px;padding:8px 16px;color:#ccc;font-size:13px;cursor:pointer}
+
+/* 連結按鈕 */
+.link-btn{display:inline-block;margin-top:12px;padding:8px 16px;background:#16213e;border:1px solid #333;border-radius:8px;color:#ccc;font-size:13px;text-decoration:none;cursor:pointer}
+.link-btn:active{background:#2d2d4e}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a class="back-btn" href="index.html">← 番茄鐘</a>
+  <h1>🎁 獎勵兌換 <span class="ver">v1.0</span></h1>
+  <button class="gear-btn" id="gearBtn" onclick="openSettings()">⚙️</button>
+</div>
+
+<div class="main">
+  <div class="points-card">
+    <div class="points-label">目前可用點數</div>
+    <div class="points-num" id="totalPoints">0</div>
+    <div class="points-sub" id="pointsSub">累計 0 點 — 已兌換 0 點</div>
+  </div>
+
+  <div class="rewards-section">
+    <h3>可兌換獎勵</h3>
+    <div id="rewardsList"></div>
+  </div>
+
+  <div class="history-section">
+    <h3>兌換紀錄</h3>
+    <div id="redeemHistory"></div>
+  </div>
+
+  <a class="link-btn" href="index.html">🍅 回到番茄鐘</a>
+</div>
+
+<!-- 兌換確認 -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-panel">
+    <div class="c-emoji" id="cEmoji"></div>
+    <div class="c-name" id="cName"></div>
+    <div class="c-cost" id="cCost"></div>
+    <div class="c-hint">請家長輸入 PIN 確認兌換</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="cd0"></div>
+      <div class="pin-dot" id="cd1"></div>
+      <div class="pin-dot" id="cd2"></div>
+      <div class="pin-dot" id="cd3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="confirmPin(1)">1</button>
+      <button class="pin-key" onclick="confirmPin(2)">2</button>
+      <button class="pin-key" onclick="confirmPin(3)">3</button>
+      <button class="pin-key" onclick="confirmPin(4)">4</button>
+      <button class="pin-key" onclick="confirmPin(5)">5</button>
+      <button class="pin-key" onclick="confirmPin(6)">6</button>
+      <button class="pin-key" onclick="confirmPin(7)">7</button>
+      <button class="pin-key" onclick="confirmPin(8)">8</button>
+      <button class="pin-key" onclick="confirmPin(9)">9</button>
+      <button class="pin-key cancel" onclick="cancelConfirm()">取消</button>
+      <button class="pin-key" onclick="confirmPin(0)">0</button>
+      <button class="pin-key del" onclick="confirmDel()">⌫</button>
+    </div>
+    <div class="pin-error" id="confirmError"></div>
+  </div>
+</div>
+
+<!-- 設定面板（家長 PIN 保護）-->
+<div class="settings-overlay" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
+  <div class="settings-panel" onclick="event.stopPropagation()">
+    <h2>⚙️ 家長設定</h2>
+
+    <div class="pin-setup">
+      <div class="pin-status" id="pinStatus">尚未設定 PIN</div>
+      <button id="pinSetupBtn" onclick="startPinSetup()">設定 / 更改 PIN</button>
+    </div>
+
+    <div class="section-title">點數倍率</div>
+    <div class="mult-default">
+      <div class="mult-row">
+        <span class="m-name">預設倍率（每分鐘）</span>
+        <div class="m-val">
+          <button class="m-btn" onclick="adjDefault(-1)">−</button>
+          <span class="m-num" id="defaultMult">1</span>
+          <button class="m-btn" onclick="adjDefault(1)">+</button>
+        </div>
+      </div>
+    </div>
+    <div id="multList"></div>
+
+    <div class="section-title">獎勵項目</div>
+    <div id="rwEditList"></div>
+    <button class="add-rw-btn" onclick="addRewardEdit()">＋ 新增獎勵</button>
+
+    <button class="close-btn" onclick="saveAndClose()">儲存</button>
+  </div>
+</div>
+
+<!-- PIN 設定 overlay -->
+<div class="confirm-overlay" id="pinSetOverlay">
+  <div class="confirm-panel">
+    <h3 id="pinSetTitle" style="font-size:16px;color:#fff;margin-bottom:6px">設定 PIN</h3>
+    <div id="pinSetSub" style="font-size:12px;color:#888;margin-bottom:16px">請輸入 4 位數字</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="sd0"></div>
+      <div class="pin-dot" id="sd1"></div>
+      <div class="pin-dot" id="sd2"></div>
+      <div class="pin-dot" id="sd3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="setupPin(1)">1</button>
+      <button class="pin-key" onclick="setupPin(2)">2</button>
+      <button class="pin-key" onclick="setupPin(3)">3</button>
+      <button class="pin-key" onclick="setupPin(4)">4</button>
+      <button class="pin-key" onclick="setupPin(5)">5</button>
+      <button class="pin-key" onclick="setupPin(6)">6</button>
+      <button class="pin-key" onclick="setupPin(7)">7</button>
+      <button class="pin-key" onclick="setupPin(8)">8</button>
+      <button class="pin-key" onclick="setupPin(9)">9</button>
+      <button class="pin-key cancel" onclick="cancelPinSetup()">取消</button>
+      <button class="pin-key" onclick="setupPin(0)">0</button>
+      <button class="pin-key del" onclick="setupPinDel()">⌫</button>
+    </div>
+    <div class="pin-error" id="pinSetError"></div>
+  </div>
+</div>
+
+<script>
+// ===== 資料 =====
+const DEFAULT_REWARDS = [
+  {emoji:'📺', name:'看 YouTube 30 分鐘', points:50},
+  {emoji:'🍦', name:'吃冰淇淋', points:80},
+  {emoji:'🎮', name:'玩遊戲 30 分鐘', points:100},
+  {emoji:'🎁', name:'選一個小禮物', points:200},
+];
+
+let config = JSON.parse(localStorage.getItem('rw_config') || 'null') || {
+  pin: '',
+  defaultMult: 1,
+  actMult: {},  // { "🎻 練琴": 2, ... }
+  rewards: DEFAULT_REWARDS.map(r=>({...r}))
+};
+
+let redeemed = JSON.parse(localStorage.getItem('rw_redeemed') || '[]');
+
+function saveConfig(){
+  localStorage.setItem('rw_config', JSON.stringify(config));
+}
+function saveRedeemed(){
+  localStorage.setItem('rw_redeemed', JSON.stringify(redeemed));
+}
+
+// ===== 點數計算 =====
+function calcEarnedPoints(){
+  let total = 0;
+  const knownActs = new Set();
+  for(let i = 0; i < localStorage.length; i++){
+    const key = localStorage.key(i);
+    if(!/^pm_\d{4}-\d{2}-\d{2}$/.test(key)) continue;
+    const records = JSON.parse(localStorage.getItem(key) || '[]');
+    records.forEach(r => {
+      const name = r.name || '';
+      const min = r.minutes || 0;
+      const mult = config.actMult[name] !== undefined ? config.actMult[name] : config.defaultMult;
+      total += min * mult;
+      if(name) knownActs.add(name);
+    });
+  }
+  return { total, knownActs };
+}
+
+function calcRedeemedPoints(){
+  return redeemed.reduce((s, r) => s + (r.points || 0), 0);
+}
+
+// ===== 音效 =====
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+function playSound(freq, duration){
+  if(!audioCtx) audioCtx = new AudioCtx();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.frequency.value = freq;
+  osc.type = 'sine';
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
+function playRedeem(){
+  playSound(523, 0.15);
+  setTimeout(()=>playSound(659, 0.15), 150);
+  setTimeout(()=>playSound(784, 0.15), 300);
+  setTimeout(()=>playSound(1047, 0.4), 450);
+}
+
+// ===== 主畫面渲染 =====
+function render(){
+  const { total: earned, knownActs } = calcEarnedPoints();
+  const spent = calcRedeemedPoints();
+  const available = earned - spent;
+
+  document.getElementById('totalPoints').textContent = available;
+  document.getElementById('pointsSub').textContent = `累計 ${earned} 點 — 已兌換 ${spent} 點`;
+
+  // 獎勵列表（按點數低到高排序）
+  const list = document.getElementById('rewardsList');
+  const rewards = [...config.rewards].sort((a,b) => a.points - b.points);
+  if(rewards.length === 0){
+    list.innerHTML = '<div class="empty">尚未設定獎勵，請家長按 ⚙️ 設定</div>';
+  } else {
+    list.innerHTML = rewards.map((r, i) => {
+      const canAfford = available >= r.points;
+      const pct = Math.min(100, Math.round(available / r.points * 100));
+      return `<div class="reward-card ${canAfford ? 'affordable' : 'locked'}" onclick="${canAfford ? `startRedeem(${config.rewards.indexOf(r)})` : ''}">
+        <div class="reward-emoji">${r.emoji || '🎁'}</div>
+        <div class="reward-info">
+          <div class="reward-name">${r.name}</div>
+          <div class="reward-cost">${r.points} 點${canAfford ? ' ✓ 可兌換' : ` （還差 ${r.points - available} 點）`}</div>
+          <div class="reward-progress"><div class="reward-progress-fill" style="width:${pct}%"></div></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // 兌換紀錄
+  const hist = document.getElementById('redeemHistory');
+  if(redeemed.length === 0){
+    hist.innerHTML = '<div class="empty">尚無兌換紀錄</div>';
+  } else {
+    hist.innerHTML = [...redeemed].reverse().map(r =>
+      `<div class="history-item">
+        <span class="h-name">${r.emoji || '🎁'} ${r.name}</span>
+        <span><span class="h-cost">-${r.points}</span> <span class="h-date">${r.date}</span></span>
+      </div>`
+    ).join('');
+  }
+
+  // 存已知活動供設定面板用
+  window._knownActs = knownActs;
+}
+
+// ===== 兌換流程 =====
+let redeemTarget = null;
+let confirmBuffer = '';
+
+function startRedeem(idx){
+  if(!config.pin){
+    alert('請先按 ⚙️ 設定家長 PIN');
+    return;
+  }
+  redeemTarget = config.rewards[idx];
+  confirmBuffer = '';
+  document.getElementById('cEmoji').textContent = redeemTarget.emoji || '🎁';
+  document.getElementById('cName').textContent = redeemTarget.name;
+  document.getElementById('cCost').textContent = `扣除 ${redeemTarget.points} 點`;
+  document.getElementById('confirmError').textContent = '';
+  updateConfirmDots();
+  document.getElementById('confirmOverlay').classList.add('show');
+}
+
+function confirmPin(n){
+  if(confirmBuffer.length >= 4) return;
+  confirmBuffer += n;
+  updateConfirmDots();
+  if(confirmBuffer.length === 4) setTimeout(handleConfirm, 200);
+}
+
+function confirmDel(){
+  confirmBuffer = confirmBuffer.slice(0,-1);
+  updateConfirmDots();
+  document.getElementById('confirmError').textContent = '';
+}
+
+function cancelConfirm(){
+  document.getElementById('confirmOverlay').classList.remove('show');
+  redeemTarget = null;
+  confirmBuffer = '';
+}
+
+function updateConfirmDots(){
+  for(let i = 0; i < 4; i++){
+    const d = document.getElementById('cd'+i);
+    d.classList.toggle('filled', i < confirmBuffer.length);
+    d.classList.remove('wrong');
+  }
+}
+
+function shakeConfirmDots(){
+  for(let i = 0; i < 4; i++){
+    const d = document.getElementById('cd'+i);
+    d.classList.add('wrong');
+    d.classList.remove('filled');
+  }
+  confirmBuffer = '';
+  if(navigator.vibrate) navigator.vibrate(200);
+}
+
+function handleConfirm(){
+  if(confirmBuffer !== config.pin){
+    document.getElementById('confirmError').textContent = 'PIN 錯誤';
+    shakeConfirmDots();
+    return;
+  }
+  // 兌換成功
+  redeemed.push({
+    emoji: redeemTarget.emoji || '🎁',
+    name: redeemTarget.name,
+    points: redeemTarget.points,
+    date: new Date().toISOString().slice(0,10),
+    time: new Date().toTimeString().slice(0,5)
+  });
+  saveRedeemed();
+  playRedeem();
+  document.getElementById('confirmOverlay').classList.remove('show');
+  redeemTarget = null;
+  confirmBuffer = '';
+  render();
+}
+
+// ===== 設定面板 =====
+let editRewards = [];
+
+function openSettings(){
+  // 如果有 PIN，要先驗證
+  if(config.pin){
+    settingsPinCheck();
+    return;
+  }
+  showSettingsPanel();
+}
+
+// 設定面板 PIN 驗證
+let settingsPinBuf = '';
+function settingsPinCheck(){
+  settingsPinBuf = '';
+  redeemTarget = null;
+  document.getElementById('cEmoji').textContent = '⚙️';
+  document.getElementById('cName').textContent = '家長設定';
+  document.getElementById('cCost').textContent = '';
+  document.getElementById('confirmError').textContent = '';
+  confirmBuffer = '';
+  updateConfirmDots();
+  // 暫時替換確認邏輯
+  window._settingsAuth = true;
+  document.getElementById('confirmOverlay').classList.add('show');
+}
+
+// Override handleConfirm to support settings auth
+const _origHandleConfirm = handleConfirm;
+handleConfirm = function(){
+  if(window._settingsAuth){
+    if(confirmBuffer !== config.pin){
+      document.getElementById('confirmError').textContent = 'PIN 錯誤';
+      shakeConfirmDots();
+      return;
+    }
+    window._settingsAuth = false;
+    document.getElementById('confirmOverlay').classList.remove('show');
+    confirmBuffer = '';
+    showSettingsPanel();
+    return;
+  }
+  _origHandleConfirm();
+};
+
+function showSettingsPanel(){
+  editRewards = config.rewards.map(r=>({...r}));
+  document.getElementById('defaultMult').textContent = config.defaultMult;
+  renderMultList();
+  renderRewardEdit();
+  updatePinStatus();
+  document.getElementById('settingsOverlay').classList.add('show');
+}
+
+function renderMultList(){
+  const acts = window._knownActs || new Set();
+  const div = document.getElementById('multList');
+  const allActs = new Set([...acts, ...Object.keys(config.actMult)]);
+  if(allActs.size === 0){
+    div.innerHTML = '<div style="font-size:12px;color:#555;padding:4px 0">使用番茄鐘後，活動會自動出現在這裡</div>';
+    return;
+  }
+  div.innerHTML = [...allActs].map(name => {
+    const val = config.actMult[name] !== undefined ? config.actMult[name] : config.defaultMult;
+    return `<div class="mult-row">
+      <span class="m-name">${name}</span>
+      <div class="m-val">
+        <button class="m-btn" onclick="adjMult('${name.replace(/'/g,"\\'")}', -1)">−</button>
+        <span class="m-num" id="mult_${[...allActs].indexOf(name)}">${val}</span>
+        <button class="m-btn" onclick="adjMult('${name.replace(/'/g,"\\'")}', 1)">+</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function adjDefault(d){
+  config.defaultMult = Math.max(1, Math.min(10, config.defaultMult + d));
+  document.getElementById('defaultMult').textContent = config.defaultMult;
+}
+
+function adjMult(name, d){
+  const cur = config.actMult[name] !== undefined ? config.actMult[name] : config.defaultMult;
+  config.actMult[name] = Math.max(1, Math.min(10, cur + d));
+  renderMultList();
+}
+
+function renderRewardEdit(){
+  const list = document.getElementById('rwEditList');
+  list.innerHTML = editRewards.map((r, i) => `
+    <div class="rw-row">
+      <input type="text" value="${r.emoji || '🎁'}" style="width:40px;min-width:40px;text-align:center;font-size:18px" onchange="editRewards[${i}].emoji=this.value">
+      <input type="text" value="${r.name}" onchange="editRewards[${i}].name=this.value" placeholder="獎勵名稱">
+      <input type="text" class="rw-pts" value="${r.points}" onchange="editRewards[${i}].points=parseInt(this.value)||0" placeholder="點數">
+      <button class="del-btn" onclick="editRewards.splice(${i},1);renderRewardEdit()">✕</button>
+    </div>
+  `).join('');
+}
+
+function addRewardEdit(){
+  editRewards.push({emoji:'🎁', name:'', points:50});
+  renderRewardEdit();
+}
+
+function saveAndClose(){
+  // 讀取 input 最新值
+  const rows = document.querySelectorAll('#rwEditList .rw-row');
+  rows.forEach((row, i) => {
+    const inputs = row.querySelectorAll('input');
+    if(editRewards[i]){
+      editRewards[i].emoji = inputs[0].value;
+      editRewards[i].name = inputs[1].value;
+      editRewards[i].points = parseInt(inputs[2].value) || 0;
+    }
+  });
+  config.rewards = editRewards.filter(r => r.name.trim());
+  saveConfig();
+  document.getElementById('settingsOverlay').classList.remove('show');
+  render();
+}
+
+function closeSettings(){
+  document.getElementById('settingsOverlay').classList.remove('show');
+}
+
+// ===== PIN 設定 =====
+let pinSetBuf = '';
+let pinSetFirst = '';
+let pinSetMode = 'set'; // 'set' | 'confirm'
+
+function updatePinStatus(){
+  document.getElementById('pinStatus').textContent = config.pin ? 'PIN 已設定 ✓' : '尚未設定 PIN';
+  document.getElementById('pinSetupBtn').textContent = config.pin ? '更改 PIN' : '設定 PIN';
+}
+
+function startPinSetup(){
+  pinSetBuf = '';
+  pinSetFirst = '';
+  pinSetMode = 'set';
+  document.getElementById('pinSetTitle').textContent = '設定 PIN';
+  document.getElementById('pinSetSub').textContent = '請輸入 4 位數字';
+  document.getElementById('pinSetError').textContent = '';
+  updateSetupDots();
+  document.getElementById('pinSetOverlay').classList.add('show');
+}
+
+function setupPin(n){
+  if(pinSetBuf.length >= 4) return;
+  pinSetBuf += n;
+  updateSetupDots();
+  if(pinSetBuf.length === 4) setTimeout(handleSetupPin, 200);
+}
+
+function setupPinDel(){
+  pinSetBuf = pinSetBuf.slice(0,-1);
+  updateSetupDots();
+  document.getElementById('pinSetError').textContent = '';
+}
+
+function cancelPinSetup(){
+  document.getElementById('pinSetOverlay').classList.remove('show');
+}
+
+function updateSetupDots(){
+  for(let i = 0; i < 4; i++){
+    const d = document.getElementById('sd'+i);
+    d.classList.toggle('filled', i < pinSetBuf.length);
+    d.classList.remove('wrong');
+  }
+}
+
+function handleSetupPin(){
+  if(pinSetMode === 'set'){
+    pinSetFirst = pinSetBuf;
+    pinSetBuf = '';
+    pinSetMode = 'confirm';
+    document.getElementById('pinSetTitle').textContent = '確認 PIN';
+    document.getElementById('pinSetSub').textContent = '請再輸入一次';
+    updateSetupDots();
+  } else {
+    if(pinSetBuf === pinSetFirst){
+      config.pin = pinSetBuf;
+      saveConfig();
+      updatePinStatus();
+      document.getElementById('pinSetOverlay').classList.remove('show');
+    } else {
+      document.getElementById('pinSetError').textContent = '兩次不一致，請重新設定';
+      for(let i = 0; i < 4; i++){
+        const d = document.getElementById('sd'+i);
+        d.classList.add('wrong');
+        d.classList.remove('filled');
+      }
+      pinSetBuf = '';
+      pinSetFirst = '';
+      pinSetMode = 'set';
+      setTimeout(()=>{
+        document.getElementById('pinSetTitle').textContent = '設定 PIN';
+        document.getElementById('pinSetSub').textContent = '請輸入 4 位數字';
+      }, 300);
+    }
+  }
+}
+
+// ===== 初始化 =====
+render();
+</script>
+</body>
+</html>
