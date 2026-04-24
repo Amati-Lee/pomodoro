@@ -46,7 +46,8 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
 .ctrl-btn:active{transform:scale(.9)}
 .btn-start{background:#e74c3c;color:#fff}
 .btn-start.running{background:#f39c12}
-.btn-reset{background:#333;color:#aaa}
+.btn-reset{background:#333;color:#aaa;position:relative;flex-direction:column;gap:0}
+.btn-hint{display:block;font-size:9px;color:#666;line-height:1;margin-top:1px}
 .btn-skip{background:#333;color:#aaa}
 
 /* 進度與統計 */
@@ -156,7 +157,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
   </div>
 
   <div class="controls">
-    <button class="ctrl-btn btn-reset" onclick="resetAll()" title="重頭開始">↺</button>
+    <button class="ctrl-btn btn-reset" id="resetBtn" title="長按 3 秒歸零">↺<span class="btn-hint">長按歸零</span></button>
     <button class="ctrl-btn btn-start" id="startBtn" onclick="toggleTimer()">▶</button>
     <button class="ctrl-btn btn-skip" onclick="skipCurrent()" title="跳過">⏭</button>
   </div>
@@ -555,6 +556,30 @@ function resetAll(){
   clearState();
   updateDisplay();
   document.title = '番茄鐘';
+}
+
+// ===== 歸零長按 3 秒 =====
+{
+  const rb = document.getElementById('resetBtn');
+  let resetTimer = null;
+  function startReset(){
+    resetTimer = setTimeout(()=>{
+      resetTimer = null;
+      if(navigator.vibrate) navigator.vibrate(100);
+      resetAll();
+    }, 3000);
+  }
+  function cancelReset(){
+    if(resetTimer){ clearTimeout(resetTimer); resetTimer = null; }
+  }
+  rb.addEventListener('touchstart', (e)=>{ e.preventDefault(); startReset(); });
+  rb.addEventListener('touchend', cancelReset);
+  rb.addEventListener('touchcancel', cancelReset);
+  rb.addEventListener('mousedown', startReset);
+  rb.addEventListener('mouseup', cancelReset);
+  rb.addEventListener('mouseleave', cancelReset);
+  // 禁止單擊觸發
+  rb.addEventListener('click', (e)=> e.preventDefault());
 }
 
 // ===== 今日紀錄（跨 session 累計）=====
