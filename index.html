@@ -1000,10 +1000,10 @@ function handlePinComplete(){
   }
 }
 
-// 鎖住：鉤環閉合（金黃色填色風格）
-const SVG_LOCKED = '<rect x="5" y="11" width="14" height="10" rx="2" fill="#f0c040" stroke="#d4a017"/><path d="M8 11V7a4 4 0 0 1 8 0v4" fill="none" stroke="#d4a017" stroke-width="2.5"/><circle cx="12" cy="16" r="1.5" fill="#8b6914"/>';
-// 解鎖：鉤環以左側為軸心向外旋開，灰藍色鉤環
-const SVG_UNLOCKED = '<rect x="5" y="11" width="14" height="10" rx="2" fill="#f0c040" stroke="#d4a017"/><path d="M8 11V7a4 4 0 0 1 8 0V2" fill="none" stroke="#7fb3c8" stroke-width="2.5" stroke-linecap="round" transform="rotate(-25,8,11)"/><circle cx="12" cy="16" r="1.5" fill="#8b6914"/>';
+// 鎖住：鉤環閉合（金黃色填色風格），鑰匙孔
+const SVG_LOCKED = '<rect x="4" y="11" width="16" height="11" rx="2.5" fill="#f0c040" stroke="#d4a017" stroke-width="1.2"/><path d="M8 11V6a4 4 0 0 1 8 0v5" fill="none" stroke="#d4a017" stroke-width="3"/><circle cx="12" cy="15" r="1.8" fill="#8b6914"/><rect x="11" y="15.5" width="2" height="3.5" rx="0.5" fill="#8b6914"/>';
+// 解鎖：鉤環以左側為軸心向外旋開，灰藍色鉤環，鑰匙孔
+const SVG_UNLOCKED = '<rect x="4" y="11" width="16" height="11" rx="2.5" fill="#f0c040" stroke="#d4a017" stroke-width="1.2"/><path d="M8 11V6a4 4 0 0 1 8 0V1" fill="none" stroke="#7fb3c8" stroke-width="3" stroke-linecap="round" transform="rotate(-30,8,11)"/><circle cx="12" cy="15" r="1.8" fill="#5a4010"/><rect x="11" y="15.5" width="2" height="3.5" rx="0.5" fill="#5a4010"/>';
 
 function updateLockUI(){
   document.getElementById('lockIcon').innerHTML = locked ? SVG_LOCKED : SVG_UNLOCKED;
