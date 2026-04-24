@@ -460,9 +460,9 @@ function updateProgress(){
 
   // 全部完成
   const allDone = document.getElementById('allDone');
-  if(doneCount >= totalCount && totalCount > 0 && scheduleIdx >= schedule.length){
+  if(scheduleIdx >= schedule.length && schedule.length > 0){
     allDone.classList.add('show');
-    document.getElementById('allDoneSub').textContent = `共完成 ${totalCount} 項活動，累計 ${totalMin} 分鐘`;
+    document.getElementById('allDoneSub').textContent = `共完成 ${doneCount} 項活動，累計 ${totalMin} 分鐘`;
   } else {
     allDone.classList.remove('show');
   }
@@ -508,9 +508,12 @@ function tick(){
       updateDisplay();
       setTimeout(()=>{ if(!running) toggleTimer(); }, 1500);
     } else {
+      // 全部排程結束
       playComplete();
       clearState();
       updateDisplay();
+      // 確保完成動畫顯示
+      document.getElementById('allDone').classList.add('show');
     }
     return;
   }
