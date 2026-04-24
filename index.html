@@ -60,7 +60,26 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
 .stats .today{font-size:13px;color:#888}
 .stats .count{font-size:28px;font-weight:700;color:#e74c3c;margin:2px 0}
 .stats .count span{font-size:13px;font-weight:400;color:#888}
+.stats{cursor:pointer}
 .stats .total-time{font-size:12px;color:#666}
+.streak{font-size:12px;color:#f39c12;margin-top:4px}
+
+/* 紀錄面板 */
+.history-panel{max-height:80vh;overflow-y:auto}
+.streak-summary{background:#16213e;border-radius:10px;padding:12px;margin-bottom:12px;text-align:center}
+.streak-summary .streak-num{font-size:36px;font-weight:700;color:#f39c12}
+.streak-summary .streak-label{font-size:13px;color:#888;margin-top:2px}
+.streak-summary .week-total{font-size:14px;color:#ccc;margin-top:8px}
+.history-list .day-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin-bottom:4px;background:#16213e;border-radius:8px}
+.history-list .day-row.today{border:1px solid #e74c3c44}
+.day-date{font-size:13px;color:#ccc}
+.day-date .weekday{color:#888;margin-left:4px;font-size:11px}
+.day-stats{text-align:right}
+.day-stats .day-min{font-size:16px;font-weight:600;color:#e74c3c}
+.day-stats .day-min span{font-size:11px;font-weight:400;color:#888}
+.day-stats .day-acts{font-size:11px;color:#666;margin-top:1px}
+.day-row .star{font-size:16px;margin-left:8px}
+.no-record{text-align:center;color:#555;font-size:13px;padding:20px 0}
 
 /* 完成列表 */
 .done-list{width:100%;max-width:340px;margin-top:12px}
@@ -173,9 +192,10 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
     </div>
   </div>
 
-  <div class="stats">
-    <div class="today">今日累計</div>
+  <div class="stats" onclick="openHistory()">
+    <div class="today">今日累計 <span style="font-size:11px;color:#555">（點擊看紀錄）</span></div>
     <div class="count" id="todayCount">0 <span>分鐘專注</span></div>
+    <div class="streak" id="streakInfo"></div>
   </div>
 
   <div class="done-list" id="doneList">
@@ -186,6 +206,16 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
     <div class="big">🎉</div>
     <div class="msg">全部完成！</div>
     <div class="sub" id="allDoneSub"></div>
+  </div>
+</div>
+
+<!-- 每日紀錄面板 -->
+<div class="settings-overlay" id="historyOverlay" onclick="closeHistory(event)">
+  <div class="settings-panel history-panel" onclick="event.stopPropagation()">
+    <h2>📊 每日紀錄</h2>
+    <div class="streak-summary" id="streakSummary"></div>
+    <div class="history-list" id="historyList"></div>
+    <button class="close-btn" onclick="document.getElementById('historyOverlay').classList.remove('show')">關閉</button>
   </div>
 </div>
 
@@ -636,6 +666,99 @@ function saveTodayRecord(){
   const last = completedActivities[completedActivities.length - 1];
   existing.push(last);
   localStorage.setItem(todayKey(), JSON.stringify(existing));
+  updateStreakDisplay();
+}
+
+// ===== 每日紀錄 & 連續天數 =====
+const WEEKDAYS = ['日','一','二','三','四','五','六'];
+
+function getDayRecords(dateStr){
+  return JSON.parse(localStorage.getItem('pm_' + dateStr) || '[]');
+}
+
+function getRecentDays(n){
+  const days = [];
+  for(let i = 0; i < n; i++){
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0,10);
+    const records = getDayRecords(key);
+    const totalMin = records.reduce((s, r) => s + (r.minutes || 0), 0);
+    days.push({ date: key, weekday: WEEKDAYS[d.getDay()], records, totalMin, count: records.length });
+  }
+  return days;
+}
+
+function calcStreak(){
+  let streak = 0;
+  for(let i = 0; i < 365; i++){
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0,10);
+    const records = getDayRecords(key);
+    if(records.length > 0) streak++;
+    else break;
+  }
+  return streak;
+}
+
+function getStarForMin(min){
+  if(min >= 90) return '🏆';
+  if(min >= 60) return '⭐';
+  if(min >= 30) return '👍';
+  return '';
+}
+
+function openHistory(){
+  const days = getRecentDays(30);
+  const streak = calcStreak();
+  const weekMin = days.slice(0, 7).reduce((s, d) => s + d.totalMin, 0);
+
+  const summary = document.getElementById('streakSummary');
+  summary.innerHTML = `
+    <div class="streak-num">🔥 ${streak}</div>
+    <div class="streak-label">連續天數</div>
+    <div class="week-total">近 7 天累計 <b style="color:#e74c3c">${weekMin}</b> 分鐘</div>
+  `;
+
+  const list = document.getElementById('historyList');
+  const todayStr = new Date().toISOString().slice(0,10);
+  const rows = days.filter(d => d.count > 0 || d.date === todayStr);
+
+  if(rows.length === 0){
+    list.innerHTML = '<div class="no-record">尚無紀錄</div>';
+  } else {
+    list.innerHTML = rows.map(d => {
+      const isToday = d.date === todayStr;
+      const star = getStarForMin(d.totalMin);
+      const actNames = d.records.map(r => r.name).filter(Boolean);
+      const unique = [...new Set(actNames)].join('、');
+      return `<div class="day-row${isToday ? ' today' : ''}">
+        <div class="day-date">${d.date.slice(5)} <span class="weekday">週${d.weekday}</span>${isToday ? ' <span style="color:#e74c3c;font-size:11px">今天</span>' : ''}</div>
+        <div style="display:flex;align-items:center">
+          <div class="day-stats">
+            <div class="day-min">${d.totalMin} <span>分鐘</span></div>
+            <div class="day-acts">${d.count} 項${unique ? ' · ' + unique : ''}</div>
+          </div>
+          <span class="star">${star}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('historyOverlay').classList.add('show');
+}
+
+function closeHistory(e){
+  if(e.target === document.getElementById('historyOverlay'))
+    document.getElementById('historyOverlay').classList.remove('show');
+}
+
+function updateStreakDisplay(){
+  const streak = calcStreak();
+  const el = document.getElementById('streakInfo');
+  if(streak > 0) el.textContent = '🔥 連續 ' + streak + ' 天';
+  else el.textContent = '';
 }
 
 // ===== 設定面板 =====
@@ -893,6 +1016,7 @@ async function keepAwake(){
 
 // ===== 初始化：優先恢復存檔 =====
 updateLockUI();
+updateStreakDisplay();
 if(!restoreState()){
   buildSchedule();
   if(schedule.length > 0) loadCurrentPhase();
