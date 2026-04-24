@@ -1003,8 +1003,8 @@ function handlePinComplete(){
 // Feather-style 線條鎖頭
 // 鎖住：鉤環閉合
 const SVG_LOCKED = '<rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M8 11V7a4 4 0 0 1 8 0v4" fill="none" stroke="#fff" stroke-width="1.8"/>';
-// 解鎖：鉤環向左上翻開
-const SVG_UNLOCKED = '<rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M8 11V7a4 4 0 0 1 8 0" fill="none" stroke="#fff" stroke-width="1.8" transform="translate(-4,-3)"/>';
+// 解鎖：左下軸心，鉤環向左旋開
+const SVG_UNLOCKED = '<rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M8 11V7a4 4 0 0 1 8 0" fill="none" stroke="#fff" stroke-width="1.8" transform="rotate(-35,8,11)"/>';
 
 function updateLockUI(){
   document.getElementById('lockIcon').innerHTML = locked ? SVG_LOCKED : SVG_UNLOCKED;
