@@ -135,7 +135,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
 
 <div class="header">
   <button class="gear-btn" onclick="openSettings()">⚙️</button>
-  <h1>🍅 番茄鐘 <span class="ver">v1.3</span></h1>
+  <h1>🍅 番茄鐘 <span class="ver">v1.4</span></h1>
   <button class="lock-btn" id="lockBtn" onclick="toggleLock()">🔓</button>
 </div>
 
@@ -827,9 +827,37 @@ if(!restoreState()){
   updateDisplay();
 }
 
-// ===== 頁面離開時存檔 =====
+// ===== 頁面離開 / 回來時處理 =====
 document.addEventListener('visibilitychange', ()=>{
-  if(document.hidden && running) saveState();
+  if(document.hidden){
+    if(running) saveState();
+  } else {
+    // 回到前景：重新計算剩餘時間
+    if(running && timerDeadline > 0){
+      const newRemain = Math.round((timerDeadline - Date.now()) / 1000);
+      if(newRemain <= 0){
+        // 背景期間時間已到
+        remainSec = 0;
+        clearInterval(intervalId);
+        tick(); // 觸發完成邏輯
+      } else {
+        remainSec = newRemain;
+        // 重啟 interval（防止被瀏覽器回收）
+        clearInterval(intervalId);
+        intervalId = setInterval(tick, 1000);
+        updateDisplay();
+      }
+    } else if(!running && localStorage.getItem('pm_state')){
+      // 可能頁面被凍結後恢復，嘗試還原
+      restoreState();
+    }
+    // 重新申請螢幕常亮
+    if(running) keepAwake();
+  }
+});
+// bfcache 恢復（iOS Safari 常見）
+window.addEventListener('pageshow', (e)=>{
+  if(e.persisted) restoreState();
 });
 window.addEventListener('beforeunload', ()=>{
   if(running) saveState();
