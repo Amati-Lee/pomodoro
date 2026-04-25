@@ -112,6 +112,8 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
 .act-row .min-btn:active{background:#e74c3c}
 .act-row .min-val{font-size:15px;font-weight:600;min-width:28px;text-align:center}
 .act-row .del-btn{background:none;border:none;color:#e74c3c;font-size:18px;cursor:pointer;padding:4px}
+.act-row .penalty-toggle{display:flex;align-items:center;gap:3px;font-size:11px;color:#888;cursor:pointer;white-space:nowrap}
+.act-row .penalty-toggle input{accent-color:#f39c12;width:14px;height:14px}
 
 .add-act-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px;background:#2d2d4e;border:1px dashed #555;border-radius:10px;color:#aaa;font-size:14px;cursor:pointer;margin-bottom:12px}
 .add-act-btn:active{background:#333}
@@ -301,9 +303,9 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
 <script>
 // ===== 活動資料 =====
 const DEFAULT_ACTIVITIES = [
-  {name:'🎻 練琴', minutes:25},
-  {name:'📖 寫功課', minutes:25},
-  {name:'📚 閱讀', minutes:20},
+  {name:'🎻 練琴', minutes:25, penalty:true},
+  {name:'📖 寫功課', minutes:25, penalty:true},
+  {name:'📚 閱讀', minutes:20, penalty:true},
 ];
 let activities = JSON.parse(localStorage.getItem('pm_activities') || 'null') || DEFAULT_ACTIVITIES.map(a=>({...a}));
 let breakMin = parseInt(localStorage.getItem('pm_break')) || 5;
@@ -324,9 +326,9 @@ let hiddenSince = 0;  // 離開頁面的 timestamp
 function buildSchedule(){
   schedule = [];
   activities.forEach((a, i) => {
-    schedule.push({type:'work', name:a.name, minutes:a.minutes, actIndex:i});
+    schedule.push({type:'work', name:a.name, minutes:a.minutes, actIndex:i, penaltyOn: a.penalty !== false});
     if(i < activities.length - 1){
-      schedule.push({type:'break', name:'☕ 休息', minutes:breakMin});
+      schedule.push({type:'break', name:'☕ 休息', minutes:breakMin, penaltyOn: false});
     }
   });
 }
@@ -612,17 +614,22 @@ function restoreState(){
 
     if(state.running && state.timerDeadline > 0){
       const now = Date.now();
-      // 存檔時間 ≈ deadline - remainSec
+      const cur = schedule[scheduleIdx];
       const saveTime = state.timerDeadline - state.remainSec * 1000;
       const totalAway = Math.max(0, Math.round((now - saveTime) / 1000));
-      const penalty = totalAway >= 3 ? totalAway : 0;
-      if(penalty > 0) penaltySec += penalty;
-      // 新剩餘 = 存檔時的剩餘 + 偷滑加罰
-      remainSec = state.remainSec + penalty;
+      // 只有該活動有勾選才加罰
+      if(cur && cur.penaltyOn && totalAway >= 3){
+        penaltySec += totalAway;
+        remainSec = state.remainSec + totalAway;
+      } else {
+        const origRemain = Math.round((state.timerDeadline - now) / 1000);
+        remainSec = Math.max(0, origRemain);
+      }
       timerDeadline = now + remainSec * 1000;
       running = false;
       updateDisplay();
-      toggleTimer();
+      if(remainSec > 0) toggleTimer();
+      else tick();
       return true;
     } else {
       // 暫停狀態恢復
@@ -853,6 +860,7 @@ function renderEditList(){
         <span class="min-val" id="editMin${i}">${a.minutes}</span><span style="color:#888;font-size:12px">分</span>
         <button class="min-btn" onclick="adjEditMin(${i},1)">+</button>
       </div>
+      <label class="penalty-toggle" title="偷滑加時"><input type="checkbox" ${a.penalty !== false ? 'checked' : ''} onchange="editActivities[${i}].penalty=this.checked">⚠</label>
       <button class="del-btn" onclick="delEditAct(${i})">✕</button>
     `;
     list.appendChild(row);
@@ -871,7 +879,7 @@ function delEditAct(i){
 }
 
 function addActivity(){
-  editActivities.push({name:'📝 新活動', minutes:25});
+  editActivities.push({name:'📝 新活動', minutes:25, penalty:true});
   renderEditList();
   // 捲到底
   const list = document.getElementById('actList');
@@ -879,7 +887,7 @@ function addActivity(){
 }
 
 function addPreset(name, minutes){
-  editActivities.push({name, minutes});
+  editActivities.push({name, minutes, penalty:true});
   renderEditList();
 }
 
@@ -1105,19 +1113,19 @@ document.addEventListener('visibilitychange', ()=>{
       saveState();
     }
   } else {
-    // 回到前景：偷滑時間加罰
+    // 回到前景：偷滑時間加罰（僅限有勾選的活動）
     if(running && timerDeadline > 0){
-      if(hiddenSince > 0){
+      const cur = schedule[scheduleIdx];
+      if(hiddenSince > 0 && cur && cur.penaltyOn){
         const awaySec = Math.round((Date.now() - hiddenSince) / 1000);
-        if(awaySec >= 3){ // 超過 3 秒才算偷滑
+        if(awaySec >= 3){
           penaltySec += awaySec;
-          // 離開時剩餘 + 偷滑秒數 = 新剩餘
           const remainAtHide = Math.max(0, Math.round((timerDeadline - hiddenSince) / 1000));
           remainSec = remainAtHide + awaySec;
           timerDeadline = Date.now() + remainSec * 1000;
         }
-        hiddenSince = 0;
       }
+      hiddenSince = 0;
       const newRemain = Math.round((timerDeadline - Date.now()) / 1000);
       if(newRemain <= 0){
         remainSec = 0;
