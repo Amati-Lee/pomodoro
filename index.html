@@ -530,6 +530,7 @@ function tick(){
     const cur = schedule[scheduleIdx];
     if(cur.type === 'work'){
       playAlarm();
+      sendNotification('⏰ 時間到！', cur.name + ' ' + cur.minutes + '分鐘已完成');
       completedActivities.push({
         name: cur.name,
         minutes: cur.minutes,
@@ -539,6 +540,7 @@ function tick(){
       saveTodayRecord();
     } else {
       playBreakEnd();
+      sendNotification('☕ 休息結束', '準備開始下一個活動');
     }
 
     scheduleIdx++;
@@ -550,6 +552,7 @@ function tick(){
     } else {
       // 全部排程結束
       playComplete();
+      sendNotification('🎉 全部完成！', '所有活動已完成，太棒了！');
       clearState();
       updateDisplay();
       // 確保完成動畫顯示
@@ -564,6 +567,12 @@ function tick(){
   document.title = `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')} ${cur ? cur.name : ''} - 番茄鐘`;
 }
 
+function sendNotification(title, body){
+  if('Notification' in window && Notification.permission === 'granted'){
+    try { new Notification(title, {body, icon:'icons/icon-192.png', tag:'pomodoro'}); } catch(e){}
+  }
+}
+
 function toggleTimer(){
   if(scheduleIdx >= schedule.length) return;
   if(running){
@@ -572,6 +581,9 @@ function toggleTimer(){
     saveState();
   } else {
     if(!audioCtx) audioCtx = new AudioCtx();
+    if('Notification' in window && Notification.permission === 'default'){
+      Notification.requestPermission();
+    }
     keepAwake();
     running = true;
     timerDeadline = Date.now() + remainSec * 1000;
