@@ -265,6 +265,10 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
         <button class="adj-btn" onclick="adjustBreak(1)">+</button>
       </div>
     </div>
+    <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:4px">
+      <label>📲 Telegram 通知（填入 chat_id）</label>
+      <input type="text" id="telegramId" placeholder="家長的 chat_id（選填）" style="background:#0f0f23;border:1px solid #333;border-radius:6px;padding:8px;font-size:14px;color:#fff">
+    </div>
     <button class="close-btn" onclick="closeSettings()">確定開始</button>
   </div>
 </div>
@@ -567,9 +571,20 @@ function tick(){
   document.title = `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')} ${cur ? cur.name : ''} - 番茄鐘`;
 }
 
+const TG_WORKER = 'https://pomodoro-bot.juria-orch.workers.dev';
+let telegramChatId = localStorage.getItem('pm_telegram') || '';
+
 function sendNotification(title, body){
   if('Notification' in window && Notification.permission === 'granted'){
     try { new Notification(title, {body, icon:'icons/icon-192.png', tag:'pomodoro'}); } catch(e){}
+  }
+  // Telegram 通知
+  if(telegramChatId){
+    fetch(TG_WORKER, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({chat_id: telegramChatId, text: title + '\n' + body})
+    }).catch(()=>{});
   }
 }
 
@@ -856,6 +871,7 @@ function openSettings(){
   editActivities = activities.map(a=>({...a}));
   renderEditList();
   document.getElementById('breakVal').textContent = breakMin;
+  document.getElementById('telegramId').value = telegramChatId;
   document.getElementById('settingsOverlay').classList.add('show');
 }
 
@@ -913,6 +929,8 @@ function closeSettings(){
   const inputs = document.querySelectorAll('#actList input[type=text]');
   inputs.forEach((inp, i) => { if(editActivities[i]) editActivities[i].name = inp.value; });
   activities = editActivities.map(a=>({...a}));
+  telegramChatId = document.getElementById('telegramId').value.trim();
+  localStorage.setItem('pm_telegram', telegramChatId);
   saveActivities();
   document.getElementById('settingsOverlay').classList.remove('show');
   resetAll();
