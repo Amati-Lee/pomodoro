@@ -112,7 +112,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
 <body>
 
 <div class="header">
-  <a class="back-btn" href="index.html">← 番茄鐘</a>
+  <a class="back-btn" href="index.html">← 蕃茄鐘</a>
   <h1>🎁 獎勵兌換 <span class="ver">v1.0</span></h1>
   <button class="gear-btn" id="gearBtn" onclick="openSettings()">⚙️</button>
 </div>
@@ -134,7 +134,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
     <div id="redeemHistory"></div>
   </div>
 
-  <a class="link-btn" href="index.html">🍅 回到番茄鐘</a>
+  <a class="link-btn" href="index.html">🍅 回到蕃茄鐘</a>
 </div>
 
 <!-- 兌換確認 -->
@@ -483,7 +483,7 @@ function renderMultList(){
   const div = document.getElementById('multList');
   const allActs = new Set([...acts, ...Object.keys(config.actMult)]);
   if(allActs.size === 0){
-    div.innerHTML = '<div style="font-size:12px;color:#555;padding:4px 0">使用番茄鐘後，活動會自動出現在這裡</div>';
+    div.innerHTML = '<div style="font-size:12px;color:#555;padding:4px 0">使用蕃茄鐘後，活動會自動出現在這裡</div>';
     return;
   }
   div.innerHTML = [...allActs].map(name => {

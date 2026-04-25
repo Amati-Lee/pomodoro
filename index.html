@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>番茄鐘</title>
+<title>蕃茄鐘</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#e74c3c">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -171,7 +171,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
 
 <div class="header">
   <button class="gear-btn" onclick="openSettings()">⚙️</button>
-  <h1>🍅 番茄鐘 <span class="ver">v1.4</span></h1>
+  <h1>🍅 蕃茄鐘 <span class="ver">v1.4</span></h1>
   <button class="lock-btn" id="lockBtn" onclick="toggleLock()">
     <div id="lockIcon" style="width:38px;height:38px"></div>
     <span class="lock-label" id="lockLabel">未鎖</span>
@@ -568,7 +568,7 @@ function tick(){
   const min = Math.floor(remainSec / 60);
   const sec = remainSec % 60;
   const cur = schedule[scheduleIdx];
-  document.title = `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')} ${cur ? cur.name : ''} - 番茄鐘`;
+  document.title = `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')} ${cur ? cur.name : ''} - 蕃茄鐘`;
 }
 
 const TG_WORKER = 'https://pomodoro-bot.juria-orch.workers.dev';
@@ -695,7 +695,7 @@ function resetAll(){
   if(schedule.length > 0) loadCurrentPhase();
   clearState();
   updateDisplay();
-  document.title = '番茄鐘';
+  document.title = '蕃茄鐘';
 }
 
 // ===== 歸零長按 3 秒 =====
